@@ -1,0 +1,6 @@
+/* Tablet Adjustments (769px to 1024px) */
+@media screen and (max-width: 1024px) {
+  .kanban-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

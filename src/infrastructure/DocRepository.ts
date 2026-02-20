@@ -1,0 +1,41 @@
+import db from "../db";
+import type { DocElementData } from "../module/interfaces/Doc";
+import type { IDocRepository } from "../application/interfaces/IDocRepository";
+
+export class DocRepository implements IDocRepository {
+  async findByProjectId(userId: string, projectId: number): Promise<DocElementData[]> {
+    return db.query(`
+      SELECT de.*, dev.content as current_content, dev.created_at as version_created_at
+      FROM doc_elements de
+      LEFT JOIN doc_element_versions dev ON de.current_version_id = dev.id
+      WHERE de.project_id = ? AND de.user_id = ?
+    `).all(projectId, userId) as DocElementData[];
+  }
+
+  async createElement(userId: string, projectId: number, title: string): Promise<number> {
+    const result = db.query(
+      "INSERT INTO doc_elements (user_id, project_id, title) VALUES (?, ?, ?) RETURNING id"
+    ).get(userId, projectId, title) as { id: number };
+    return result.id;
+  }
+
+  async createVersion(userId: string, elementId: number, content: string): Promise<number> {
+    // We check if the element belongs to the user before creating a version
+    const element = db.query("SELECT id FROM doc_elements WHERE id = ? AND user_id = ?").get(elementId, userId);
+    if (!element) {
+      throw new Error("Unauthorized or element not found");
+    }
+
+    const result = db.query(
+      "INSERT INTO doc_element_versions (element_id, content) VALUES (?, ?) RETURNING id"
+    ).get(elementId, content) as { id: number };
+    return result.id;
+  }
+
+  async updateCurrentVersion(userId: string, elementId: number, versionId: number): Promise<void> {
+    const result = db.query("UPDATE doc_elements SET current_version_id = ? WHERE id = ? AND user_id = ?").run(versionId, elementId, userId);
+    if (result.changes === 0) {
+      throw new Error("Unauthorized or element not found");
+    }
+  }
+}

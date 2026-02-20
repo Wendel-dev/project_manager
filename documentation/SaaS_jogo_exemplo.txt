@@ -1,0 +1,55 @@
+Sumário Detalhado do Projeto: IndieFlow (MVP)
+
+O IndieFlow é um Micro SaaS de governança de fluxo para desenvolvimento de jogos. Diferente de ferramentas genéricas, ele foca no equilíbrio entre as áreas do jogo (arte, código, som) e na manutenção da consistência entre o que está documentado (GDD) e o que está sendo produzido (Cards).
+🏗️ Estrutura de Módulos
+Módulo 1: Core de Governança e Multi-Projetos
+
+Este módulo gerencia a entrada do usuário e a inteligência de priorização do software.
+
+    Gestão de Projetos: Permite criar múltiplos projetos independentes (ex: "RPG Principal", "Game Jam de Outubro").
+
+    Algoritmo "Next Step": A funcionalidade central da tela inicial. Ele analisa qual área do jogo (Arte, Programação, Som, Level Design) tem menos tarefas concluídas e destaca a tarefa mais antiga dessa área.
+
+        Objetivo: Forçar o desenvolvedor a avançar em gargalos que ele costuma ignorar.
+
+    Monitor de Inércia: Um sistema de monitoramento que identifica tarefas travadas em "Doing" por mais de 7 dias e dispara alertas educativos para evitar o perfeccionismo desnecessário em fases iniciais.
+
+Módulo 2: GDD Atômico (Documentação Dinâmica)
+
+Em vez de um arquivo de texto único, a documentação é tratada como um banco de dados de elementos.
+
+    Elementos Independentes: O usuário cria registros para cada mecânica, asset ou estratégia de mercado.
+
+    Versionador Automático: Cada alteração salva gera um novo ID de Versão. Isso permite que o sistema saiba exatamente quando uma definição mudou.
+
+    Exportador Markdown: Um motor de síntese que agrupa todos os elementos atômicos em um único arquivo .md estruturado, permitindo que o desenvolvedor tenha um documento "tradicional" sempre que precisar.
+
+Módulo 3: Backlog Especializado e Sincronização
+
+O elo de ligação entre a ideia (GDD) e a execução (Tarefa).
+
+    Cards com Vínculo de Versão: Ao criar uma tarefa, ela pode ser vinculada a um elemento do GDD. O card "carimba" a versão atual daquele elemento.
+
+    Sistema de Alerta de Obsolescência (Conciliação): Se o elemento no GDD for alterado, todos os cards vinculados a ele mostram automaticamente um alerta visual de "Desatualizado".
+
+    Fluxo de Resolução: O usuário resolve o conflito editando o card (ajuste técnico) ou clicando em "Sem Impacto" (aceite manual), garantindo que nada seja implementado fora do que foi planejado.
+
+Módulo 4: Ciclo de Vida do Jogo (Workflow Rígido)
+
+Organiza o progresso do jogo em etapas lógicas da indústria.
+
+    Régua de Fases: O projeto é dividido obrigatoriamente em: Conceito → Protótipo → Alpha → Beta → Gold.
+
+    Finalização Manual: A mudança de fase não é automática; o usuário deve declarar que a etapa terminou.
+
+    Gate de Pendências (Soft-Gate): Ao tentar mudar de fase, o sistema lista as tarefas não concluídas. Se o usuário decidir avançar assim mesmo, o sistema isola essas tarefas na fase anterior para manter o novo contexto limpo.
+
+    Histórico Colapsável: Organização visual onde tarefas de fases passadas ficam arquivadas, mas acessíveis, para reduzir o ruído visual.
+
+🛠️ Resumo Técnico para Implementação
+Componente	Prioridade	Complexidade Estimada
+Banco de Dados Relacional	Alta	Baixa
+Lógica de Versionamento (GDD vs Card)	Crítica	Média
+Algoritmo de Priorização (Next Step)	Alta	Baixa
+Motor de Exportação Markdown	Média	Baixa
+Interface de Fases e Histórico	Média	Média
