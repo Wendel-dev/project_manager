@@ -5,6 +5,7 @@ import { TaskRepository } from "./infrastructure/TaskRepository";
 import { DocRepository } from "./infrastructure/DocRepository";
 import { AddProjectUseCase } from "./application/AddProjectUseCase";
 import { UpdateProjectUseCase } from "./application/UpdateProjectUseCase";
+import { DeleteProjectUseCase } from "./application/DeleteProjectUseCase";
 import { GetTasksUseCase } from "./application/GetTasksUseCase";
 import { AddTaskUseCase } from "./application/AddTaskUseCase";
 import { UpdateTaskUseCase } from "./application/UpdateTaskUseCase";
@@ -27,6 +28,7 @@ const docRepo = new DocRepository();
 
 const addProjectUseCase = new AddProjectUseCase(projectRepo, taskRepo);
 const updateProjectUseCase = new UpdateProjectUseCase(projectRepo);
+const deleteProjectUseCase = new DeleteProjectUseCase(projectRepo);
 const getTasksUseCase = new GetTasksUseCase(taskRepo);
 const addTaskUseCase = new AddTaskUseCase(taskRepo);
 const updateTaskUseCase = new UpdateTaskUseCase(taskRepo);
@@ -127,6 +129,13 @@ const server = serve({
           const id = parseInt(req.params.id);
           const updates = await req.json();
           await updateProjectUseCase.execute(userId, id, updates);
+          return Response.json({ success: true });
+        });
+      },
+      async DELETE(req) {
+        return handleProtected(req, async (userId) => {
+          const id = parseInt(req.params.id);
+          await deleteProjectUseCase.execute(userId, id);
           return Response.json({ success: true });
         });
       },

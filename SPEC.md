@@ -1,81 +1,54 @@
-# Especificação Técnica: Documentação Hierárquica e Parsing Avançado
+# Especificação Técnica: Excluir Projeto
 
 ## 1. Visão Geral
-O objetivo é transformar o sistema de documentação simples em uma estrutura hierárquica e recursiva. A aplicação permitirá o upload de documentos (MD, TXT, PDF), realizando o parse automático de seções baseadas em títulos/cabeçalhos e organizando-as em uma estrutura de árvore.
+O objetivo é implementar a funcionalidade de exclusão de um projeto no sistema. Esta operação deve ser segura, exigindo confirmação do usuário, e deve garantir a integridade do banco de dados ao remover todas as dependências associadas (tarefas, documentos e versões).
 
 ## 2. Requisitos Funcionais
-- **Importação de Documentos:** Suporte a arquivos `.md`, `.txt` e `.pdf`.
-- **Parsing Hierárquico:** 
-    - No Markdown, os níveis de heading (`#`, `##`, `###`, etc.) definirão a hierarquia.
-    - No PDF/TXT, padrões de títulos serão identificados para criar seções.
-- **Navegação Recursiva:**
-    - Barra lateral com índice em árvore (dropdown/nested list).
-    - Ao selecionar um elemento pai, o sistema deve renderizar o seu conteúdo e, recursivamente, o conteúdo de todos os seus filhos.
-- **Gerenciamento Manual:**
-    - Ao criar um novo elemento manualmente, o usuário poderá selecionar um "Elemento Pai".
-    - Se nenhum pai for selecionado, ele será um elemento raiz.
-- **Interface de Edição:** Manter o suporte a versionamento já existente.
+- **Botão de Exclusão:** Disponibilizar uma opção de "Excluir Projeto" na interface (ex: Dashboard ou Sidebar).
+- **Confirmação:** Exibir um modal ou alerta de confirmação antes de proceder com a exclusão.
+- **Remoção Completa:** Excluir o projeto e todos os seus dados relacionados (Tarefas, Elementos de Documentação e Versões de Documentos).
+- **Atualização de Estado:** Após a exclusão, a lista de projetos deve ser atualizada e o projeto selecionado deve ser limpo.
 
-## 3. Arquitetura e Dados
+## 3. Detalhes Técnicos
 
-### 3.1 Alterações no Banco de Dados (SQLite)
-Tabela `doc_elements`:
-- Adicionar coluna `parent_id INTEGER` (chave estrangeira para `doc_elements.id`).
+### 3.1 Banco de Dados (SQLite)
+Como o schema atual não utiliza `ON DELETE CASCADE`, a exclusão deve ser feita de forma manual e ordenada no repositório para evitar órfãos:
+1. `doc_element_versions` (via JOIN com `doc_elements`)
+2. `doc_elements`
+3. `tasks`
+4. `projects`
 
-### 3.2 Novos Modelos e Interfaces
-```typescript
-// src/module/interfaces/Doc.ts
-export interface DocElementData {
-  id: number;
-  user_id: string;
-  project_id: number;
-  title: string;
-  parent_id: number | null; // Nova coluna
-  current_version_id: number | null;
-  current_content?: string;
-  version_created_at?: string;
-}
+### 3.2 Alterações na API
+- **Nova Rota:** `DELETE /api/projects/:id`
+- **Middleware:** Deve ser uma rota protegida (requer autenticação).
 
-// Interface para o resultado do parsing
-export interface ParsedDocSection {
-  title: string;
-  content: string;
-  children: ParsedDocSection[];
-}
-```
+### 3.3 Componentes de Software
+- **IProjectRepository:** Adicionar método `delete(userId: string, id: number)`.
+- **DeleteProjectUseCase:** Novo caso de uso para gerenciar a lógica de exclusão.
+- **ProjectContext:** Adicionar função `deleteProject(id: number)` para integração com o frontend.
 
-### 3.3 Camada de Infraestrutura (Novos Parsers de Documentação)
-Para não interferir nos parsers existentes (que focam em extrair tarefas e fases), criaremos uma nova interface e implementações:
-- **IDocParser (Nova Interface):** Definirá o contrato `parse(content: string | Buffer): Promise<ParsedDocSection[]>`.
-- **DocMarkdownParser:** Focará exclusivamente na hierarquia de cabeçalhos (`#` a `######`) para gerar a árvore de seções.
-- **DocPDFParser / DocTextParser:** Novos parsers que identificarão quebras de seção e títulos para a árvore de documentação.
+## 4. Plano de Implementação Passo a Passo
 
-### 3.4 Camada de Aplicação (Novos Use Cases)
-- **ParseDocDocumentUseCase:** Novo use case para gerenciar o upload e parsing de arquivos de documentação.
-- **ImportDocUseCase:** Recebe a árvore `ParsedDocSection[]` e realiza a persistência recursiva no banco.
-- **GetDocTreeUseCase:** Recuperar a estrutura de documentos já organizada em árvore para o frontend.
+### Passo 1: Camada de Domínio e Infraestrutura
+1.  Atualizar `src/application/interfaces/IProjectRepository.ts` com o método `delete`.
+2.  Implementar o método `delete` em `src/infrastructure/ProjectRepository.ts`.
+    - *Nota: Realizar as deleções em ordem reversa de dependência.*
 
-## 4. Design da Interface (Frontend)
+### Passo 2: Camada de Aplicação
+1.  Criar `src/application/DeleteProjectUseCase.ts`.
+2.  Instanciar e configurar o use case em `src/index.ts`.
 
-### 4.1 DocSidebar (Navegação)
-- Componente recursivo que renderiza a árvore de documentos.
-- Suporte a expandir/recolher níveis.
+### Passo 3: API (Backend)
+1.  Adicionar o endpoint `DELETE /api/projects/:id` em `src/index.ts`.
+2.  Testar a rota com um cliente HTTP ou script simples.
 
-### 4.2 DocViewer (Visualização)
-- Ao clicar em um nó:
-    1. Renderiza o título e conteúdo do nó atual.
-    2. Abaixo, renderiza recursivamente os filhos (Título do filho + Conteúdo do filho).
-    3. Estilização visual para diferenciar níveis de indentação ou usar cards aninhados.
+### Passo 4: Frontend (Contexto e UI)
+1.  Atualizar `src/contexts/ProjectContext.tsx` para incluir a lógica de chamada à API de exclusão.
+2.  Adicionar um botão de exclusão no componente `src/components/ProjectDashboard.tsx` ou `src/components/Sidebar.tsx`.
+3.  Implementar o `window.confirm` ou um modal customizado para confirmação.
 
-### 4.3 DocForm (Edição/Criação)
-- Campo `select` para escolher o `parent_id` entre os documentos existentes do projeto.
-- Área de Drag & Drop para upload de arquivos.
-
-## 5. Plano de Implementação
-
-1.  **Migração:** Adicionar `parent_id` ao banco de dados e atualizar tipos TS.
-2.  **Refatoração de Parsers:** Alterar a lógica de parsing para suportar a estrutura aninhada de `ParsedDocSection`.
-3.  **Backend:** Atualizar Repositórios e criar/ajustar endpoints para suportar a hierarquia.
-4.  **Frontend (Contexto):** Atualizar o `ProjectContext` para carregar e organizar os documentos em árvore.
-5.  **Frontend (Componentes):** Criar os componentes `DocTree`, `DocSectionViewer` e atualizar o `DocEditor`.
-6.  **Testes:** Validar o parsing de documentos complexos e a renderização recursiva.
+## 5. Critérios de Aceite
+- [ ] O projeto é removido da lista lateral após a exclusão.
+- [ ] Todas as tarefas associadas ao projeto são removidas do banco de dados.
+- [ ] Todos os documentos e suas versões associadas são removidos do banco de dados.
+- [ ] Não é possível excluir um projeto que não pertence ao usuário logado.

@@ -41,6 +41,7 @@ interface ProjectContextType {
   importDocHierarchy: (sections: ParsedDocSection[]) => Promise<void>;
   importProject: (parsedProject: ParsedPhase) => Promise<void>;
   transitionPhase: (projectId: number, nextPhaseName: string, tasks?: ParsedPhase['tasks']) => Promise<void>;
+  deleteProject: (id: number) => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -145,6 +146,30 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
     } catch (error) {
       console.error("Error transitioning phase:", error);
+      throw error;
+    }
+  };
+
+  const deleteProject = async (id: number) => {
+    if (!token) return;
+    try {
+      const response = await fetch(`/api/projects/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (response.ok) {
+        if (selectedProject?.id === id) {
+          setSelectedProject(null);
+          setTasks([]);
+          setDocs([]);
+        }
+        await fetchProjects();
+      } else {
+        const err = await response.json();
+        throw new Error(err.error || "Failed to delete project");
+      }
+    } catch (error) {
+      console.error("Error deleting project:", error);
       throw error;
     }
   };
@@ -306,7 +331,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       parseDocHierarchy,
       importDocHierarchy,
       importProject,
-      transitionPhase
+      transitionPhase,
+      deleteProject
     }}>
       {children}
     </ProjectContext.Provider>

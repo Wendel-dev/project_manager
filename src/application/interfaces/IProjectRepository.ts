@@ -5,4 +5,5 @@ export interface IProjectRepository {
   findAll(userId: string): Promise<ProjectData[]>;
   findById(userId: string, id: number): Promise<ProjectData | null>;
   update(userId: string, id: number, updates: Partial<ProjectData>): Promise<void>;
+  delete(userId: string, id: number): Promise<void>;
 }

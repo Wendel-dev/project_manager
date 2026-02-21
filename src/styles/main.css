@@ -653,6 +653,12 @@ body {
   align-items: flex-start;
 }
 
+.header-title-container {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
 .phase-progression {
   display: flex;
   align-items: center;
@@ -667,6 +673,22 @@ body {
   border: none;
   border-radius: 0.25rem;
   cursor: pointer;
+}
+
+.delete-project-btn {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  background-color: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-project-btn:hover {
+  background-color: #ef4444;
+  color: white;
 }
 
 .phase-error {

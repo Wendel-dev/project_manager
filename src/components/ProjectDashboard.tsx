@@ -8,7 +8,7 @@ import PhaseTransitionModal from './PhaseTransitionModal';
 import { ProjectModule } from '../module/Project';
 
 const ProjectDashboard: React.FC = () => {
-  const { selectedProject, tasks, transitionPhase } = useProject();
+  const { selectedProject, tasks, transitionPhase, deleteProject } = useProject();
   const [activeTab, setActiveTab] = useState<'kanban' | 'docs' | 'gov'>('kanban');
   const [phaseError, setPhaseError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,6 +20,16 @@ const ProjectDashboard: React.FC = () => {
       </div>
     );
   }
+
+  const handleDeleteProject = async () => {
+    if (window.confirm(`Tem certeza que deseja excluir o projeto "${selectedProject.name}"? Esta ação não pode ser desfeita.`)) {
+      try {
+        await deleteProject(selectedProject.id);
+      } catch (error) {
+        alert("Erro ao excluir projeto: " + (error as Error).message);
+      }
+    }
+  };
 
   const projectPhases = ProjectModule.getPhases(selectedProject.type);
   const currentPhaseIndex = projectPhases.indexOf(selectedProject.current_phase);
@@ -50,7 +60,10 @@ const ProjectDashboard: React.FC = () => {
     <div className="dashboard">
       <header className="dashboard-header">
         <div className="header-top">
-          <h1>{selectedProject.name}</h1>
+          <div className="header-title-container">
+            <h1>{selectedProject.name}</h1>
+            <button className="delete-project-btn" onClick={handleDeleteProject}>Excluir Projeto</button>
+          </div>
           <div className="phase-progression">
             <span>Fase: <strong>{selectedProject.current_phase}</strong></span>
             <button className="next-phase-btn" onClick={handleNextPhaseClick}>Próxima Fase</button>

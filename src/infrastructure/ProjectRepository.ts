@@ -37,4 +37,21 @@ export class ProjectRepository implements IProjectRepository {
     
     db.query(`UPDATE projects SET ${setClause} WHERE id = ? AND user_id = ?`).run(...values);
   }
+
+  async delete(userId: string, id: number): Promise<void> {
+    // 1. doc_element_versions (via JOIN with doc_elements)
+    db.query(`
+      DELETE FROM doc_element_versions 
+      WHERE element_id IN (SELECT id FROM doc_elements WHERE project_id = ? AND user_id = ?)
+    `).run(id, userId);
+
+    // 2. doc_elements
+    db.query("DELETE FROM doc_elements WHERE project_id = ? AND user_id = ?").run(id, userId);
+
+    // 3. tasks
+    db.query("DELETE FROM tasks WHERE project_id = ? AND user_id = ?").run(id, userId);
+
+    // 4. projects
+    db.query("DELETE FROM projects WHERE id = ? AND user_id = ?").run(id, userId);
+  }
 }
