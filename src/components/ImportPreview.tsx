@@ -5,9 +5,15 @@ interface ImportPreviewProps {
   parsedProject: ParsedProject;
   onConfirm: (finalProject: ParsedProject) => void;
   onCancel: () => void;
+  hideProjectFields?: boolean;
 }
 
-const ImportPreview: React.FC<ImportPreviewProps> = ({ parsedProject, onConfirm, onCancel }) => {
+const ImportPreview: React.FC<ImportPreviewProps> = ({ 
+  parsedProject, 
+  onConfirm, 
+  onCancel,
+  hideProjectFields = false
+}) => {
   const [project, setProject] = useState<ParsedProject>(parsedProject);
 
   const handleTaskChange = (index: number, field: keyof ParsedTask, value: any) => {
@@ -19,22 +25,24 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ parsedProject, onConfirm,
   return (
     <div className="import-preview">
       <h3>Visualização da Importação</h3>
-      <div className="project-preview-header">
-        <label>Nome do Projeto:</label>
-        <input 
-          type="text" 
-          value={project.name} 
-          onChange={(e) => setProject({ ...project, name: e.target.value })} 
-        />
-        <label>Tipo:</label>
-        <select 
-          value={project.type} 
-          onChange={(e) => setProject({ ...project, type: e.target.value })}
-        >
-          <option value="jogo">Jogo</option>
-          <option value="aplicativo">Aplicativo</option>
-        </select>
-      </div>
+      {!hideProjectFields && (
+        <div className="project-preview-header">
+          <label>Nome do Projeto:</label>
+          <input 
+            type="text" 
+            value={project.name} 
+            onChange={(e) => setProject({ ...project, name: e.target.value })} 
+          />
+          <label>Tipo:</label>
+          <select 
+            value={project.type} 
+            onChange={(e) => setProject({ ...project, type: e.target.value })}
+          >
+            <option value="jogo">Jogo</option>
+            <option value="aplicativo">Aplicativo</option>
+          </select>
+        </div>
+      )}
 
       <div className="tasks-preview-list">
         <h4>Tarefas ({project.tasks.length})</h4>

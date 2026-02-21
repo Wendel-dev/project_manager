@@ -4,17 +4,14 @@ import { useAuth } from '../contexts/AuthContext';
 import KanbanBoard from './KanbanBoard';
 import DocEditor from './DocEditor';
 import GovernanceAlerts from './GovernanceAlerts';
-
-const PHASES = {
-  jogo: ['Concepção', 'Pré-produção', 'Produção', 'Polimento', 'Lançamento'],
-  aplicativo: ['Pesquisa UX', 'MVP', 'Beta', 'Escalamento', 'Manutenção']
-};
+import PhaseTransitionModal from './PhaseTransitionModal';
+import { ProjectModule } from '../module/Project';
 
 const ProjectDashboard: React.FC = () => {
-  const { selectedProject, tasks, fetchProjects } = useProject();
-  const { token } = useAuth();
+  const { selectedProject, tasks, transitionPhase } = useProject();
   const [activeTab, setActiveTab] = useState<'kanban' | 'docs' | 'gov'>('kanban');
   const [phaseError, setPhaseError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (!selectedProject) {
     return (
@@ -24,10 +21,10 @@ const ProjectDashboard: React.FC = () => {
     );
   }
 
-  const projectPhases = PHASES[selectedProject.type as keyof typeof PHASES];
+  const projectPhases = ProjectModule.getPhases(selectedProject.type);
   const currentPhaseIndex = projectPhases.indexOf(selectedProject.current_phase);
 
-  const handleNextPhase = async () => {
+  const handleNextPhaseClick = () => {
     // Soft-Gate: Check for unfinished tasks
     const unfinishedTasks = tasks.filter(t => t.status !== 'done').length;
     
@@ -37,25 +34,15 @@ const ProjectDashboard: React.FC = () => {
       return;
     }
 
-    if (currentPhaseIndex < projectPhases.length - 1) {
-      const nextPhase = projectPhases[currentPhaseIndex + 1];
-      try {
-        const response = await fetch(`/api/projects/${selectedProject.id}`, {
-          method: "PATCH",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ current_phase: nextPhase }),
-        });
-        if (response.ok) {
-          await fetchProjects();
-          // We might need to refresh selected project state here
-          // For now, let's keep it simple
-        }
-      } catch (error) {
-        console.error("Error updating phase:", error);
-      }
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmTransition = async (phaseName: string, tasks?: any[]) => {
+    try {
+      await transitionPhase(selectedProject.id, phaseName, tasks);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error in transition:", error);
     }
   };
 
@@ -66,9 +53,7 @@ const ProjectDashboard: React.FC = () => {
           <h1>{selectedProject.name}</h1>
           <div className="phase-progression">
             <span>Fase: <strong>{selectedProject.current_phase}</strong></span>
-            {currentPhaseIndex < projectPhases.length - 1 && (
-              <button className="next-phase-btn" onClick={handleNextPhase}>Próxima Fase</button>
-            )}
+            <button className="next-phase-btn" onClick={handleNextPhaseClick}>Próxima Fase</button>
           </div>
         </div>
         {phaseError && <div className="phase-error">{phaseError}</div>}
@@ -103,6 +88,14 @@ const ProjectDashboard: React.FC = () => {
         {activeTab === 'docs' && <DocEditor />}
         {activeTab === 'gov' && <GovernanceAlerts />}
       </section>
+
+      <PhaseTransitionModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleConfirmTransition}
+        projectType={selectedProject.type}
+        currentPhase={selectedProject.current_phase}
+      />
     </div>
   );
 };

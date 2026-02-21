@@ -13,13 +13,14 @@ import { SaveDocUseCase } from "./application/SaveDocUseCase";
 import { GetGovernanceUseCase } from "./application/GetGovernanceUseCase";
 import { ParseDocumentUseCase } from "./application/ParseDocumentUseCase";
 import { ImportTasksUseCase } from "./application/ImportTasksUseCase";
+import { TransitionPhaseUseCase } from "./application/TransitionPhaseUseCase";
 import { authenticate } from "./middleware/authMiddleware";
 
 const projectRepo = new ProjectRepository();
 const taskRepo = new TaskRepository();
 const docRepo = new DocRepository();
 
-const addProjectUseCase = new AddProjectUseCase(projectRepo);
+const addProjectUseCase = new AddProjectUseCase(projectRepo, taskRepo);
 const updateProjectUseCase = new UpdateProjectUseCase(projectRepo);
 const getTasksUseCase = new GetTasksUseCase(taskRepo);
 const addTaskUseCase = new AddTaskUseCase(taskRepo);
@@ -29,6 +30,7 @@ const saveDocUseCase = new SaveDocUseCase(docRepo);
 const getGovernanceUseCase = new GetGovernanceUseCase(taskRepo);
 const parseDocumentUseCase = new ParseDocumentUseCase();
 const importTasksUseCase = new ImportTasksUseCase(projectRepo, taskRepo);
+const transitionPhaseUseCase = new TransitionPhaseUseCase(projectRepo, taskRepo);
 
 async function handleProtected(req: Request, handler: (userId: string) => Promise<Response>) {
   const userId = await authenticate(req);
@@ -57,8 +59,8 @@ const server = serve({
       },
       async POST(req) {
         return handleProtected(req, async (userId) => {
-          const { name, type } = await req.json();
-          const result = await addProjectUseCase.execute(userId, name, type);
+          const { name, type, initialPhaseName, tasks } = await req.json();
+          const result = await addProjectUseCase.execute(userId, name, type, initialPhaseName, tasks);
           return Response.json(result, { status: 201 });
         });
       },
@@ -112,6 +114,17 @@ const server = serve({
           const id = parseInt(req.params.id);
           const updates = await req.json();
           await updateProjectUseCase.execute(userId, id, updates);
+          return Response.json({ success: true });
+        });
+      },
+    },
+
+    "/api/projects/:id/transition": {
+      async POST(req) {
+        return handleProtected(req, async (userId) => {
+          const projectId = parseInt(req.params.id);
+          const { nextPhaseName, tasks } = await req.json();
+          await transitionPhaseUseCase.execute(userId, projectId, nextPhaseName, tasks);
           return Response.json({ success: true });
         });
       },

@@ -1,3 +1,2 @@
-incluir conversor de documentação
 criar configuração por codigo
 empacotar serviço

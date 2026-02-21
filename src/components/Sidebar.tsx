@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
+import { ProjectModule } from '../module/Project';
 import type { ProjectType } from '../module/interfaces/Project';
 import type { ParsedProject } from '../module/interfaces/ParsedProject';
 import FileUpload from './FileUpload';
@@ -12,21 +13,37 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { projects, selectedProject, selectProject, addProject, parseDocument, importProject } = useProject();
+  const { projects, selectedProject, selectProject, addProject, parseDocument } = useProject();
   const { user, logout } = useAuth();
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectType, setNewProjectType] = useState<ProjectType>('jogo');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-  const [isImporting, setIsImporting] = useState(false);
+  
+  const [creationStep, setCreationStep] = useState<'basic' | 'choice' | 'manual' | 'import'>('basic');
+  const [manualPhase, setManualPhase] = useState('');
   const [parsedData, setParsedData] = useState<ParsedProject | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const resetForm = () => {
+    setNewProjectName('');
+    setNewProjectType('jogo');
+    setCreationStep('basic');
+    setManualPhase('');
+    setParsedData(null);
+  };
+
+  const handleBasicSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newProjectName) {
-      await addProject(newProjectName, newProjectType);
-      setNewProjectName('');
-      onClose();
+      setCreationStep('choice');
     }
+  };
+
+  const handleManualCreate = async () => {
+    const suggestions = ProjectModule.getPhases(newProjectType);
+    const finalPhase = manualPhase || suggestions[0];
+    await addProject(newProjectName, newProjectType, finalPhase);
+    resetForm();
+    onClose();
   };
 
   const handleFileSelect = async (file: File) => {
@@ -40,9 +57,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const handleConfirmImport = async (project: ParsedProject) => {
     try {
-      await importProject(project);
-      setIsImporting(false);
-      setParsedData(null);
+      // Use addProject with the parsed data
+      await addProject(newProjectName, newProjectType, project.type, project.tasks);
+      resetForm();
       onClose();
     } catch (err) {
       alert("Erro ao importar: " + (err as Error).message);
@@ -91,49 +108,88 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       
       <div className="new-project-form">
         <h3>Novo Projeto</h3>
-        <form onSubmit={handleSubmit}>
-          <input 
-            type="text" 
-            placeholder="Nome do projeto" 
-            value={newProjectName} 
-            onChange={(e) => setNewProjectName(e.target.value)} 
-            required 
-          />
-          <select 
-            value={newProjectType} 
-            onChange={(e) => setNewProjectType(e.target.value as ProjectType)}
-          >
-            <option value="jogo">Jogo</option>
-            <option value="aplicativo">Aplicativo</option>
-          </select>
-          <button type="submit">Criar</button>
-        </form>
         
-        <div className="import-project-section">
-          {!isImporting ? (
-            <button className="import-toggle-btn" onClick={() => setIsImporting(true)}>
-              Importar de Arquivo...
-            </button>
-          ) : (
-            <div className="import-modal-overlay">
-              <div className="import-modal">
-                <button className="close-import" onClick={() => { setIsImporting(false); setParsedData(null); }}>×</button>
+        {creationStep === 'basic' && (
+          <form onSubmit={handleBasicSubmit}>
+            <input 
+              type="text" 
+              placeholder="Nome do projeto" 
+              value={newProjectName} 
+              onChange={(e) => setNewProjectName(e.target.value)} 
+              required 
+            />
+            <select 
+              value={newProjectType} 
+              onChange={(e) => setNewProjectType(e.target.value as ProjectType)}
+            >
+              <option value="jogo">Jogo</option>
+              <option value="aplicativo">Aplicativo</option>
+            </select>
+            <button type="submit">Continuar</button>
+          </form>
+        )}
+
+        {creationStep === 'choice' && (
+          <div className="creation-choice">
+            <p>Configuração inicial:</p>
+            <button onClick={() => setCreationStep('import')}>Importar Especificação</button>
+            <button onClick={() => {
+              setCreationStep('manual');
+              setManualPhase(ProjectModule.getInitialPhase(newProjectType));
+            }}>Iniciar Vazio</button>
+            <button className="cancel-btn-small" onClick={() => setCreationStep('basic')}>Voltar</button>
+          </div>
+        )}
+
+        {creationStep === 'manual' && (
+          <div className="manual-setup">
+            <label>Fase Inicial:</label>
+            <input 
+              type="text" 
+              list="initial-phase-suggestions"
+              value={manualPhase} 
+              onChange={(e) => setManualPhase(e.target.value)}
+            />
+            <datalist id="initial-phase-suggestions">
+              {ProjectModule.getPhases(newProjectType).map(p => <option key={p} value={p} />)}
+            </datalist>
+            <div className="actions">
+              <button onClick={handleManualCreate}>Criar Projeto</button>
+              <button className="cancel-btn-small" onClick={() => setCreationStep('choice')}>Voltar</button>
+            </div>
+          </div>
+        )}
+
+        {creationStep === 'import' && (
+          <div className="import-setup-overlay">
+             <div className="import-setup-modal">
+                <button className="close-import" onClick={() => setCreationStep('choice')}>×</button>
                 {!parsedData ? (
                   <>
-                    <h3>Importar Projeto</h3>
+                    <h3>Importar Especificação</h3>
                     <FileUpload onFileSelect={handleFileSelect} />
                   </>
                 ) : (
-                  <ImportPreview 
-                    parsedProject={parsedData} 
-                    onConfirm={handleConfirmImport}
-                    onCancel={() => setParsedData(null)}
-                  />
+                  <div className="import-preview-container">
+                    <div className="phase-name-edit">
+                      <label>Fase Inicial Sugerida:</label>
+                      <input 
+                        type="text" 
+                        value={parsedData.type} 
+                        onChange={(e) => setParsedData({...parsedData, type: e.target.value})}
+                      />
+                    </div>
+                    <ImportPreview 
+                      parsedProject={parsedData} 
+                      onConfirm={handleConfirmImport}
+                      onCancel={() => setParsedData(null)}
+                      hideProjectFields={true}
+                    />
+                  </div>
                 )}
-              </div>
-            </div>
-          )}
-        </div>
+             </div>
+          </div>
+        )}
       </div>
 
       <nav className="project-list">

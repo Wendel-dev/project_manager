@@ -33,7 +33,7 @@ interface ProjectContextType {
   tasks: Task[];
   docs: DocElement[];
   selectProject: (id: number) => void;
-  addProject: (name: string, type: ProjectType) => Promise<void>;
+  addProject: (name: string, type: ProjectType, initialPhaseName?: string, tasks?: ParsedProject['tasks']) => Promise<void>;
   fetchProjects: () => Promise<void>;
   addTask: (title: string, area: string, description?: string, doc_element_version_id?: number) => Promise<void>;
   updateTask: (id: number, updates: Partial<Task>) => Promise<void>;
@@ -41,6 +41,7 @@ interface ProjectContextType {
   fetchDocs: (projectId: number) => Promise<void>;
   parseDocument: (file: File) => Promise<ParsedProject>;
   importProject: (parsedProject: ParsedProject) => Promise<void>;
+  transitionPhase: (projectId: number, nextPhaseName: string, tasks?: ParsedProject['tasks']) => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -107,13 +108,45 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const addProject = async (name: string, type: ProjectType) => {
+  const addProject = async (name: string, type: ProjectType, initialPhaseName?: string, tasks?: ParsedProject['tasks']) => {
     if (!user) return;
     try {
-      await projectRepository.create(user.id, name, type, ""); // Initial phase is handled by backend
-      await fetchProjects();
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ name, type, initialPhaseName, tasks }),
+      });
+      if (response.ok) {
+        await fetchProjects();
+      }
     } catch (error) {
       console.error("Error adding project:", error);
+    }
+  };
+
+  const transitionPhase = async (projectId: number, nextPhaseName: string, tasks?: ParsedProject['tasks']) => {
+    if (!token) return;
+    try {
+      const response = await fetch(`/api/projects/${projectId}/transition`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ nextPhaseName, tasks }),
+      });
+      if (response.ok) {
+        await fetchProjects();
+        // Update selected project if it's the one that transitioned
+        if (selectedProject?.id === projectId) {
+          const updatedProjects = await projectRepository.findAll(user!.id);
+          const updated = updatedProjects.find(p => p.id === projectId);
+          if (updated) {
+            setSelectedProject(updated);
+            await fetchTasks(projectId);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error transitioning phase:", error);
+      throw error;
     }
   };
 
@@ -230,7 +263,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       addDoc,
       fetchDocs,
       parseDocument,
-      importProject
+      importProject,
+      transitionPhase
     }}>
       {children}
     </ProjectContext.Provider>
