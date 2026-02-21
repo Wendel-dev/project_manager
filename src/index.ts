@@ -11,6 +11,8 @@ import { UpdateTaskUseCase } from "./application/UpdateTaskUseCase";
 import { GetDocsUseCase } from "./application/GetDocsUseCase";
 import { SaveDocUseCase } from "./application/SaveDocUseCase";
 import { GetGovernanceUseCase } from "./application/GetGovernanceUseCase";
+import { ParseDocumentUseCase } from "./application/ParseDocumentUseCase";
+import { ImportTasksUseCase } from "./application/ImportTasksUseCase";
 import { authenticate } from "./middleware/authMiddleware";
 
 const projectRepo = new ProjectRepository();
@@ -25,6 +27,8 @@ const updateTaskUseCase = new UpdateTaskUseCase(taskRepo);
 const getDocsUseCase = new GetDocsUseCase(docRepo);
 const saveDocUseCase = new SaveDocUseCase(docRepo);
 const getGovernanceUseCase = new GetGovernanceUseCase(taskRepo);
+const parseDocumentUseCase = new ParseDocumentUseCase();
+const importTasksUseCase = new ImportTasksUseCase(projectRepo, taskRepo);
 
 async function handleProtected(req: Request, handler: (userId: string) => Promise<Response>) {
   const userId = await authenticate(req);
@@ -55,6 +59,40 @@ const server = serve({
         return handleProtected(req, async (userId) => {
           const { name, type } = await req.json();
           const result = await addProjectUseCase.execute(userId, name, type);
+          return Response.json(result, { status: 201 });
+        });
+      },
+    },
+
+    "/api/parse-document": {
+      async POST(req) {
+        return handleProtected(req, async (userId) => {
+          const contentType = req.headers.get("content-type") || "";
+          let content: string | Buffer;
+          let fileType: string = "txt";
+
+          if (contentType.includes("multipart/form-data")) {
+            const formData = await req.formData();
+            const file = formData.get("file") as File;
+            if (!file) return Response.json({ error: "No file provided" }, { status: 400 });
+            content = Buffer.from(await file.arrayBuffer());
+            fileType = file.name.split(".").pop() || "txt";
+          } else {
+             content = await req.text();
+             fileType = req.headers.get("X-File-Type") || "txt";
+          }
+
+          const result = await parseDocumentUseCase.execute(content, fileType);
+          return Response.json(result);
+        });
+      },
+    },
+
+    "/api/import-project": {
+      async POST(req) {
+        return handleProtected(req, async (userId) => {
+          const parsedProject = await req.json();
+          const result = await importTasksUseCase.execute(userId, parsedProject);
           return Response.json(result, { status: 201 });
         });
       },

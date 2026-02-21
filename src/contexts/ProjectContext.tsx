@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from "
 import type { ReactNode } from "react";
 import { ProjectRepositoryAPI } from "../infrastructure/ProjectRepositoryAPI";
 import type { ProjectData, ProjectType } from "../module/interfaces/Project";
+import type { ParsedProject } from "../module/interfaces/ParsedProject";
 import { useAuth } from "./AuthContext";
 
 export type Project = ProjectData;
@@ -38,6 +39,8 @@ interface ProjectContextType {
   updateTask: (id: number, updates: Partial<Task>) => Promise<void>;
   addDoc: (title: string, content: string, element_id?: number) => Promise<void>;
   fetchDocs: (projectId: number) => Promise<void>;
+  parseDocument: (file: File) => Promise<ParsedProject>;
+  importProject: (parsedProject: ParsedProject) => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -163,6 +166,47 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
+  const parseDocument = async (file: File): Promise<ParsedProject> => {
+    if (!token) throw new Error("Unauthorized");
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("/api/parse-document", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || "Failed to parse document");
+    }
+
+    return await response.json();
+  };
+
+  const importProject = async (parsedProject: ParsedProject) => {
+    if (!token) return;
+    try {
+      const response = await fetch("/api/import-project", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(parsedProject),
+      });
+      if (response.ok) {
+        await fetchProjects();
+      } else {
+        const err = await response.json();
+        throw new Error(err.error || "Failed to import project");
+      }
+    } catch (error) {
+      console.error("Error importing project:", error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchProjects();
@@ -184,7 +228,9 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       addTask,
       updateTask,
       addDoc,
-      fetchDocs
+      fetchDocs,
+      parseDocument,
+      importProject
     }}>
       {children}
     </ProjectContext.Provider>

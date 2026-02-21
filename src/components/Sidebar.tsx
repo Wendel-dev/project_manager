@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
 import type { ProjectType } from '../module/interfaces/Project';
+import type { ParsedProject } from '../module/interfaces/ParsedProject';
+import FileUpload from './FileUpload';
+import ImportPreview from './ImportPreview';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -9,11 +12,13 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { projects, selectedProject, selectProject, addProject } = useProject();
+  const { projects, selectedProject, selectProject, addProject, parseDocument, importProject } = useProject();
   const { user, logout } = useAuth();
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectType, setNewProjectType] = useState<ProjectType>('jogo');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [isImporting, setIsImporting] = useState(false);
+  const [parsedData, setParsedData] = useState<ParsedProject | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +26,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       await addProject(newProjectName, newProjectType);
       setNewProjectName('');
       onClose();
+    }
+  };
+
+  const handleFileSelect = async (file: File) => {
+    try {
+      const parsed = await parseDocument(file);
+      setParsedData(parsed);
+    } catch (err) {
+      alert("Erro ao processar arquivo: " + (err as Error).message);
+    }
+  };
+
+  const handleConfirmImport = async (project: ParsedProject) => {
+    try {
+      await importProject(project);
+      setIsImporting(false);
+      setParsedData(null);
+      onClose();
+    } catch (err) {
+      alert("Erro ao importar: " + (err as Error).message);
     }
   };
 
@@ -83,6 +108,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </select>
           <button type="submit">Criar</button>
         </form>
+        
+        <div className="import-project-section">
+          {!isImporting ? (
+            <button className="import-toggle-btn" onClick={() => setIsImporting(true)}>
+              Importar de Arquivo...
+            </button>
+          ) : (
+            <div className="import-modal-overlay">
+              <div className="import-modal">
+                <button className="close-import" onClick={() => { setIsImporting(false); setParsedData(null); }}>×</button>
+                {!parsedData ? (
+                  <>
+                    <h3>Importar Projeto</h3>
+                    <FileUpload onFileSelect={handleFileSelect} />
+                  </>
+                ) : (
+                  <ImportPreview 
+                    parsedProject={parsedData} 
+                    onConfirm={handleConfirmImport}
+                    onCancel={() => setParsedData(null)}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <nav className="project-list">

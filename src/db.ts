@@ -23,7 +23,10 @@ db.run(`
     description TEXT,
     area TEXT NOT NULL,
     status TEXT NOT NULL,
+    target_date TEXT,
+    checklists TEXT,
     doc_element_version_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     started_doing_at DATETIME,
     FOREIGN KEY(project_id) REFERENCES projects(id)
@@ -58,6 +61,21 @@ for (const table of tables) {
   if (!info.find((col) => col.name === "user_id")) {
     db.run(`ALTER TABLE ${table} ADD COLUMN user_id TEXT DEFAULT 'default_user'`);
   }
+}
+
+// Additional migrations for tasks
+const tasksInfo = db.query("PRAGMA table_info(tasks)").all() as any[];
+if (!tasksInfo.find((col) => col.name === "target_date")) {
+  db.run("ALTER TABLE tasks ADD COLUMN target_date TEXT");
+}
+if (!tasksInfo.find((col) => col.name === "checklists")) {
+  db.run("ALTER TABLE tasks ADD COLUMN checklists TEXT");
+}
+if (!tasksInfo.find((col) => col.name === "created_at")) {
+  // SQLite limitation: cannot add a column with non-constant default like CURRENT_TIMESTAMP via ALTER TABLE.
+  // We add it with a temporary constant string and then update it.
+  db.run("ALTER TABLE tasks ADD COLUMN created_at DATETIME DEFAULT '2026-02-20 00:00:00'");
+  db.run("UPDATE tasks SET created_at = CURRENT_TIMESTAMP WHERE created_at = '2026-02-20 00:00:00'");
 }
 
 export default db;
