@@ -39,8 +39,10 @@ db.run(`
     user_id TEXT NOT NULL,
     project_id INTEGER,
     title TEXT NOT NULL,
+    parent_id INTEGER, -- Added for hierarchy
     current_version_id INTEGER,
-    FOREIGN KEY(project_id) REFERENCES projects(id)
+    FOREIGN KEY(project_id) REFERENCES projects(id),
+    FOREIGN KEY(parent_id) REFERENCES doc_elements(id)
   )
 `);
 
@@ -61,6 +63,12 @@ for (const table of tables) {
   if (!info.find((col) => col.name === "user_id")) {
     db.run(`ALTER TABLE ${table} ADD COLUMN user_id TEXT DEFAULT 'default_user'`);
   }
+}
+
+// Migration for doc_elements parent_id
+const docElementsInfo = db.query("PRAGMA table_info(doc_elements)").all() as any[];
+if (!docElementsInfo.find((col) => col.name === "parent_id")) {
+  db.run("ALTER TABLE doc_elements ADD COLUMN parent_id INTEGER");
 }
 
 // Additional migrations for tasks

@@ -8,12 +8,17 @@ import { UpdateProjectUseCase } from "./application/UpdateProjectUseCase";
 import { GetTasksUseCase } from "./application/GetTasksUseCase";
 import { AddTaskUseCase } from "./application/AddTaskUseCase";
 import { UpdateTaskUseCase } from "./application/UpdateTaskUseCase";
-import { GetDocsUseCase } from "./application/GetDocsUseCase";
 import { SaveDocUseCase } from "./application/SaveDocUseCase";
 import { GetGovernanceUseCase } from "./application/GetGovernanceUseCase";
 import { ParseDocumentUseCase } from "./application/ParseDocumentUseCase";
 import { ImportTasksUseCase } from "./application/ImportTasksUseCase";
 import { TransitionPhaseUseCase } from "./application/TransitionPhaseUseCase";
+import { ParseDocDocumentUseCase } from "./application/ParseDocDocumentUseCase";
+import { ImportDocUseCase } from "./application/ImportDocUseCase";
+import { GetDocTreeUseCase } from "./application/GetDocTreeUseCase";
+import { DocMarkdownParser } from "./infrastructure/parsers/DocMarkdownParser";
+import { DocTextParser } from "./infrastructure/parsers/DocTextParser";
+import { DocPDFParser } from "./infrastructure/parsers/DocPDFParser";
 import { authenticate } from "./middleware/authMiddleware";
 
 const projectRepo = new ProjectRepository();
@@ -25,12 +30,20 @@ const updateProjectUseCase = new UpdateProjectUseCase(projectRepo);
 const getTasksUseCase = new GetTasksUseCase(taskRepo);
 const addTaskUseCase = new AddTaskUseCase(taskRepo);
 const updateTaskUseCase = new UpdateTaskUseCase(taskRepo);
-const getDocsUseCase = new GetDocsUseCase(docRepo);
+const getDocTreeUseCase = new GetDocTreeUseCase(docRepo);
 const saveDocUseCase = new SaveDocUseCase(docRepo);
 const getGovernanceUseCase = new GetGovernanceUseCase(taskRepo);
 const parseDocumentUseCase = new ParseDocumentUseCase();
 const importTasksUseCase = new ImportTasksUseCase(projectRepo, taskRepo);
 const transitionPhaseUseCase = new TransitionPhaseUseCase(projectRepo, taskRepo);
+
+const docParsers = [
+  new DocMarkdownParser(),
+  new DocTextParser(),
+  new DocPDFParser(),
+];
+const parseDocDocumentUseCase = new ParseDocDocumentUseCase(docParsers);
+const importDocUseCase = new ImportDocUseCase(docRepo);
 
 async function handleProtected(req: Request, handler: (userId: string) => Promise<Response>) {
   const userId = await authenticate(req);
@@ -148,11 +161,46 @@ const server = serve({
       },
     },
 
+    "/api/parse-doc-hierarchy": {
+      async POST(req) {
+        return handleProtected(req, async (userId) => {
+          const contentType = req.headers.get("content-type") || "";
+          let content: string | Buffer;
+          let filename: string = "document.txt";
+
+          if (contentType.includes("multipart/form-data")) {
+            const formData = await req.formData();
+            const file = formData.get("file") as File;
+            if (!file) return Response.json({ error: "No file provided" }, { status: 400 });
+            content = Buffer.from(await file.arrayBuffer());
+            filename = file.name;
+          } else {
+             content = await req.text();
+             filename = req.headers.get("X-File-Name") || "document.txt";
+          }
+
+          const result = await parseDocDocumentUseCase.execute(content, filename);
+          return Response.json(result);
+        });
+      },
+    },
+
+    "/api/projects/:id/import-docs": {
+      async POST(req) {
+        return handleProtected(req, async (userId) => {
+          const projectId = parseInt(req.params.id);
+          const sections = await req.json();
+          await importDocUseCase.execute(userId, projectId, sections);
+          return Response.json({ success: true }, { status: 201 });
+        });
+      },
+    },
+
     "/api/projects/:id/docs": {
       async GET(req) {
         return handleProtected(req, async (userId) => {
           const id = parseInt(req.params.id);
-          const docs = await getDocsUseCase.execute(userId, id);
+          const docs = await getDocTreeUseCase.execute(userId, id);
           return Response.json(docs);
         });
       },

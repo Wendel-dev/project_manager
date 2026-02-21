@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ProjectRepositoryAPI } from "../infrastructure/ProjectRepositoryAPI";
 import type { ProjectData, ProjectType } from "../module/interfaces/Project";
 import type { ParsedPhase } from "../module/interfaces/ParsedProject";
+import type { DocElementData, ParsedDocSection } from "../module/interfaces/Doc";
 import { useAuth } from "./AuthContext";
 
 export type Project = ProjectData;
@@ -19,12 +20,8 @@ export interface Task {
   started_doing_at?: string;
 }
 
-export interface DocElement {
-  id: number;
-  project_id: number;
-  title: string;
-  current_version_id?: number;
-  current_content?: string;
+export interface DocElement extends DocElementData {
+  children?: DocElement[];
 }
 
 interface ProjectContextType {
@@ -37,9 +34,11 @@ interface ProjectContextType {
   fetchProjects: () => Promise<void>;
   addTask: (title: string, area: string, description?: string, doc_element_version_id?: number) => Promise<void>;
   updateTask: (id: number, updates: Partial<Task>) => Promise<void>;
-  addDoc: (title: string, content: string, element_id?: number) => Promise<void>;
+  addDoc: (title: string, content: string, element_id?: number, parent_id?: number | null) => Promise<void>;
   fetchDocs: (projectId: number) => Promise<void>;
   parseDocument: (file: File) => Promise<ParsedPhase>;
+  parseDocHierarchy: (file: File) => Promise<ParsedDocSection[]>;
+  importDocHierarchy: (sections: ParsedDocSection[]) => Promise<void>;
   importProject: (parsedProject: ParsedPhase) => Promise<void>;
   transitionPhase: (projectId: number, nextPhaseName: string, tasks?: ParsedPhase['tasks']) => Promise<void>;
 }
@@ -182,20 +181,61 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const addDoc = async (title: string, content: string, element_id?: number) => {
+  const addDoc = async (title: string, content: string, element_id?: number, parent_id?: number | null) => {
     if (!selectedProject || !token) return;
     try {
       const response = await fetch(`/api/projects/${selectedProject.id}/docs`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ title, content, element_id }),
+        body: JSON.stringify({ title, content, element_id, parent_id }),
       });
       if (response.ok) {
         await fetchDocs(selectedProject.id);
-        await fetchTasks(selectedProject.id); // Versions might change relevance to tasks
+        await fetchTasks(selectedProject.id);
       }
     } catch (error) {
       console.error("Error adding/updating doc:", error);
+    }
+  };
+
+  const parseDocHierarchy = async (file: File): Promise<ParsedDocSection[]> => {
+    if (!token) throw new Error("Unauthorized");
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("/api/parse-doc-hierarchy", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || "Failed to parse document hierarchy");
+    }
+
+    return await response.json();
+  };
+
+  const importDocHierarchy = async (sections: ParsedDocSection[]) => {
+    if (!selectedProject || !token) return;
+    try {
+      const response = await fetch(`/api/projects/${selectedProject.id}/import-docs`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(sections),
+      });
+      if (response.ok) {
+        await fetchDocs(selectedProject.id);
+      } else {
+        const err = await response.json();
+        throw new Error(err.error || "Failed to import documents");
+      }
+    } catch (error) {
+      console.error("Error importing documents:", error);
+      throw error;
     }
   };
 
@@ -263,6 +303,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       addDoc,
       fetchDocs,
       parseDocument,
+      parseDocHierarchy,
+      importDocHierarchy,
       importProject,
       transitionPhase
     }}>
