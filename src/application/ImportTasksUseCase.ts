@@ -1,7 +1,6 @@
 import type { IProjectRepository } from './interfaces/IProjectRepository';
 import type { ITaskRepository } from './interfaces/ITaskRepository';
-import type { ParsedProject } from '../module/interfaces/ParsedProject';
-import type { ProjectType } from '../module/interfaces/Project';
+import type { ParsedPhase } from '../module/interfaces/ParsedProject';
 
 export class ImportTasksUseCase {
   constructor(
@@ -9,13 +8,13 @@ export class ImportTasksUseCase {
     private taskRepository: ITaskRepository
   ) {}
 
-  async execute(userId: string, parsedProject: ParsedProject): Promise<{ projectId: number }> {
-    // 1. Create project
+  async execute(userId: string, parsedProject: ParsedPhase): Promise<{ projectId: number }> {
+    // 1. Create project (Note: here we don't have project name anymore in ParsedProject)
     const project = await this.projectRepository.create(
       userId,
-      parsedProject.name,
-      (parsedProject.type as ProjectType) || 'jogo',
-      'Início'
+      'Projeto Importado', // Defaulting as we don't have it in ParsedProject anymore
+      'jogo',
+      parsedProject.name
     );
 
     // 2. Add tasks

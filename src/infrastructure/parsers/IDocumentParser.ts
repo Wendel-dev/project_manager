@@ -1,6 +1,6 @@
-import { ParsedProject } from "../../module/interfaces/ParsedProject";
+import { ParsedPhase } from "../../module/interfaces/ParsedProject";
 
 export interface IDocumentParser {
-  parse(content: string | Buffer): Promise<ParsedProject>;
+  parse(content: string | Buffer): Promise<ParsedPhase>;
   canHandle(mimeTypeOrExtension: string): boolean;
 }

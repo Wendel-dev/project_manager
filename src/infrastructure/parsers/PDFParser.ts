@@ -1,6 +1,6 @@
 import { PDFParse } from 'pdf-parse';
 import { IDocumentParser } from './IDocumentParser';
-import { ParsedProject } from '../../module/interfaces/ParsedProject';
+import { ParsedPhase } from '../../module/interfaces/ParsedProject';
 import { TextParser } from './TextParser';
 
 export class PDFParser implements IDocumentParser {
@@ -11,7 +11,7 @@ export class PDFParser implements IDocumentParser {
     return ['pdf', 'application/pdf'].includes(ext);
   }
 
-  async parse(content: Buffer | string): Promise<ParsedProject> {
+  async parse(content: Buffer | string): Promise<ParsedPhase> {
     const buffer = typeof content === 'string' ? Buffer.from(content) : content;
     try {
       const data = await PDFParse(buffer);

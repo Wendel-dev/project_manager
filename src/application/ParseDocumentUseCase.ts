@@ -2,7 +2,7 @@ import type { IDocumentParser } from '../infrastructure/parsers/IDocumentParser'
 import { MarkdownParser } from '../infrastructure/parsers/MarkdownParser';
 import { PDFParser } from '../infrastructure/parsers/PDFParser';
 import { TextParser } from '../infrastructure/parsers/TextParser';
-import type { ParsedProject } from '../module/interfaces/ParsedProject';
+import type { ParsedPhase } from '../module/interfaces/ParsedProject';
 
 export class ParseDocumentUseCase {
   private parsers: IDocumentParser[] = [
@@ -11,7 +11,7 @@ export class ParseDocumentUseCase {
     new TextParser()
   ];
 
-  async execute(content: string | Buffer, type: string): Promise<ParsedProject> {
+  async execute(content: string | Buffer, type: string): Promise<ParsedPhase> {
     const parser = this.parsers.find(p => p.canHandle(type));
     
     if (!parser) {

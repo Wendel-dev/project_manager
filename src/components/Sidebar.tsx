@@ -3,7 +3,7 @@ import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
 import { ProjectModule } from '../module/Project';
 import type { ProjectType } from '../module/interfaces/Project';
-import type { ParsedProject } from '../module/interfaces/ParsedProject';
+import type { ParsedPhase } from '../module/interfaces/ParsedProject';
 import FileUpload from './FileUpload';
 import ImportPreview from './ImportPreview';
 
@@ -21,7 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   
   const [creationStep, setCreationStep] = useState<'basic' | 'choice' | 'manual' | 'import'>('basic');
   const [manualPhase, setManualPhase] = useState('');
-  const [parsedData, setParsedData] = useState<ParsedProject | null>(null);
+  const [parsedData, setParsedData] = useState<ParsedPhase | null>(null);
 
   const resetForm = () => {
     setNewProjectName('');
@@ -55,10 +55,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleConfirmImport = async (project: ParsedProject) => {
+  const handleConfirmImport = async (project: ParsedPhase) => {
     try {
-      // Use addProject with the parsed data
-      await addProject(newProjectName, newProjectType, project.type, project.tasks);
+      // Use addProject with the user-defined name/type and the document's phase name
+      await addProject(newProjectName, newProjectType, project.name, project.tasks);
       resetForm();
       onClose();
     } catch (err) {
@@ -172,11 +172,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 ) : (
                   <div className="import-preview-container">
                     <div className="phase-name-edit">
-                      <label>Fase Inicial Sugerida:</label>
+                      <label>Nome da Fase Extraído:</label>
                       <input 
                         type="text" 
-                        value={parsedData.type} 
-                        onChange={(e) => setParsedData({...parsedData, type: e.target.value})}
+                        value={parsedData.name} 
+                        onChange={(e) => setParsedData({...parsedData, name: e.target.value})}
                       />
                     </div>
                     <ImportPreview 

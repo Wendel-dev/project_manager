@@ -1,6 +1,6 @@
 import { expect, test, describe, mock } from "bun:test";
 import { ImportTasksUseCase } from "./ImportTasksUseCase";
-import { ParsedProject } from "../module/interfaces/ParsedProject";
+import { ParsedPhase } from "../module/interfaces/ParsedProject";
 
 describe("ImportTasksUseCase", () => {
   test("should create project and tasks", async () => {
@@ -22,9 +22,8 @@ describe("ImportTasksUseCase", () => {
 
     const useCase = new ImportTasksUseCase(projectRepoMock as any, taskRepoMock as any);
     
-    const parsedProject: ParsedProject = {
-      name: "Imported Project",
-      type: "jogo",
+    const parsedProject: ParsedPhase = {
+      name: "Fase Importada",
       tasks: [
         { title: "Task 1", description: "Desc 1", checklists: ["Item 1"] },
         { title: "Task 2", description: "Desc 2", checklists: [] }

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { ParsedProject, ParsedTask } from '../module/interfaces/ParsedProject';
+import { ParsedPhase, ParsedTask } from '../module/interfaces/ParsedProject';
 
 interface ImportPreviewProps {
-  parsedProject: ParsedProject;
-  onConfirm: (finalProject: ParsedProject) => void;
+  parsedProject: ParsedPhase;
+  onConfirm: (finalProject: ParsedPhase) => void;
   onCancel: () => void;
   hideProjectFields?: boolean;
 }
@@ -14,7 +14,7 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({
   onCancel,
   hideProjectFields = false
 }) => {
-  const [project, setProject] = useState<ParsedProject>(parsedProject);
+  const [project, setProject] = useState<ParsedPhase>(parsedProject);
 
   const handleTaskChange = (index: number, field: keyof ParsedTask, value: any) => {
     const newTasks = [...project.tasks];
@@ -27,20 +27,12 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({
       <h3>Visualização da Importação</h3>
       {!hideProjectFields && (
         <div className="project-preview-header">
-          <label>Nome do Projeto:</label>
+          <label>Nome da Fase:</label>
           <input 
             type="text" 
             value={project.name} 
             onChange={(e) => setProject({ ...project, name: e.target.value })} 
           />
-          <label>Tipo:</label>
-          <select 
-            value={project.type} 
-            onChange={(e) => setProject({ ...project, type: e.target.value })}
-          >
-            <option value="jogo">Jogo</option>
-            <option value="aplicativo">Aplicativo</option>
-          </select>
         </div>
       )}
 

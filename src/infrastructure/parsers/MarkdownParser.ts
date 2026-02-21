@@ -1,7 +1,7 @@
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import { IDocumentParser } from './IDocumentParser';
-import { ParsedProject, ParsedTask } from '../../module/interfaces/ParsedProject';
+import { ParsedPhase, ParsedTask } from '../../module/interfaces/ParsedProject';
 
 export class MarkdownParser implements IDocumentParser {
   canHandle(mimeTypeOrExtension: string): boolean {
@@ -9,14 +9,13 @@ export class MarkdownParser implements IDocumentParser {
     return ['md', 'markdown', 'text/markdown'].includes(ext);
   }
 
-  async parse(content: string | Buffer): Promise<ParsedProject> {
+  async parse(content: string | Buffer): Promise<ParsedPhase> {
     const text = typeof content === 'string' ? content : content.toString();
     const processor = unified().use(remarkParse);
     const tree = processor.parse(text);
 
-    const project: ParsedProject = {
-      name: 'Untitled Project',
-      type: 'General',
+    const phase: ParsedPhase = {
+      name: 'Nova Fase',
       tasks: [],
     };
 
@@ -26,12 +25,12 @@ export class MarkdownParser implements IDocumentParser {
     for (const node of (tree as any).children) {
       if (node.type === 'heading') {
         if (node.depth === 1) {
-          project.name = this.toString(node);
+          phase.name = this.toString(node);
         } else if (node.depth === 2) {
           currentArea = this.toString(node);
         } else if (node.depth === 3) {
           if (currentTask) {
-            project.tasks.push(currentTask);
+            phase.tasks.push(currentTask);
           }
           currentTask = {
             title: this.toString(node),
@@ -70,10 +69,10 @@ export class MarkdownParser implements IDocumentParser {
     }
 
     if (currentTask) {
-      project.tasks.push(currentTask);
+      phase.tasks.push(currentTask);
     }
 
-    return project;
+    return phase;
   }
 
   private extractTargetDate(text: string, task: ParsedTask): string {

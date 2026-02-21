@@ -35,7 +35,7 @@ Another task
 ### Task
     `;
     const result = await parser.parse(md);
-    expect(result.name).toBe("Untitled Project");
+    expect(result.name).toBe("Nova Fase");
     expect(result.tasks[0].title).toBe("Task");
   });
 });

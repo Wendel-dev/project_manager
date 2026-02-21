@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from "
 import type { ReactNode } from "react";
 import { ProjectRepositoryAPI } from "../infrastructure/ProjectRepositoryAPI";
 import type { ProjectData, ProjectType } from "../module/interfaces/Project";
-import type { ParsedProject } from "../module/interfaces/ParsedProject";
+import type { ParsedPhase } from "../module/interfaces/ParsedProject";
 import { useAuth } from "./AuthContext";
 
 export type Project = ProjectData;
@@ -33,15 +33,15 @@ interface ProjectContextType {
   tasks: Task[];
   docs: DocElement[];
   selectProject: (id: number) => void;
-  addProject: (name: string, type: ProjectType, initialPhaseName?: string, tasks?: ParsedProject['tasks']) => Promise<void>;
+  addProject: (name: string, type: ProjectType, initialPhaseName?: string, tasks?: ParsedPhase['tasks']) => Promise<void>;
   fetchProjects: () => Promise<void>;
   addTask: (title: string, area: string, description?: string, doc_element_version_id?: number) => Promise<void>;
   updateTask: (id: number, updates: Partial<Task>) => Promise<void>;
   addDoc: (title: string, content: string, element_id?: number) => Promise<void>;
   fetchDocs: (projectId: number) => Promise<void>;
-  parseDocument: (file: File) => Promise<ParsedProject>;
-  importProject: (parsedProject: ParsedProject) => Promise<void>;
-  transitionPhase: (projectId: number, nextPhaseName: string, tasks?: ParsedProject['tasks']) => Promise<void>;
+  parseDocument: (file: File) => Promise<ParsedPhase>;
+  importProject: (parsedProject: ParsedPhase) => Promise<void>;
+  transitionPhase: (projectId: number, nextPhaseName: string, tasks?: ParsedPhase['tasks']) => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -108,7 +108,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const addProject = async (name: string, type: ProjectType, initialPhaseName?: string, tasks?: ParsedProject['tasks']) => {
+  const addProject = async (name: string, type: ProjectType, initialPhaseName?: string, tasks?: ParsedPhase['tasks']) => {
     if (!user) return;
     try {
       const response = await fetch("/api/projects", {
@@ -124,7 +124,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const transitionPhase = async (projectId: number, nextPhaseName: string, tasks?: ParsedProject['tasks']) => {
+  const transitionPhase = async (projectId: number, nextPhaseName: string, tasks?: ParsedPhase['tasks']) => {
     if (!token) return;
     try {
       const response = await fetch(`/api/projects/${projectId}/transition`, {
@@ -199,7 +199,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const parseDocument = async (file: File): Promise<ParsedProject> => {
+  const parseDocument = async (file: File): Promise<ParsedPhase> => {
     if (!token) throw new Error("Unauthorized");
     const formData = new FormData();
     formData.append("file", file);
@@ -220,7 +220,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     return await response.json();
   };
 
-  const importProject = async (parsedProject: ParsedProject) => {
+  const importProject = async (parsedProject: ParsedPhase) => {
     if (!token) return;
     try {
       const response = await fetch("/api/import-project", {

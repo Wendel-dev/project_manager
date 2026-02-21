@@ -4,13 +4,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { PHASES } from '../module/Project';
 import FileUpload from './FileUpload';
 import ImportPreview from './ImportPreview';
-import type { ParsedProject } from '../module/interfaces/ParsedProject';
+import type { ParsedPhase } from '../module/interfaces/ParsedProject';
 import type { ProjectType } from '../module/interfaces/Project';
 
 interface PhaseTransitionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (phaseName: string, tasks?: ParsedProject['tasks']) => Promise<void>;
+  onConfirm: (phaseName: string, tasks?: ParsedPhase['tasks']) => Promise<void>;
   projectType: ProjectType;
   currentPhase: string;
 }
@@ -25,7 +25,7 @@ const PhaseTransitionModal: React.FC<PhaseTransitionModalProps> = ({
   const { parseDocument } = useProject();
   const [mode, setMode] = useState<'choice' | 'manual' | 'import'>('choice');
   const [manualPhase, setManualPhase] = useState('');
-  const [parsedData, setParsedData] = useState<ParsedProject | null>(null);
+  const [parsedData, setParsedData] = useState<ParsedPhase | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
@@ -55,10 +55,10 @@ const PhaseTransitionModal: React.FC<PhaseTransitionModalProps> = ({
     }
   };
 
-  const handleConfirmImport = async (project: ParsedProject) => {
+  const handleConfirmImport = async (project: ParsedPhase) => {
     setIsSubmitting(true);
     try {
-      await onConfirm(project.type, project.tasks);
+      await onConfirm(project.name, project.tasks);
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -132,8 +132,8 @@ const PhaseTransitionModal: React.FC<PhaseTransitionModalProps> = ({
                   <label>Nome da Fase Extraído:</label>
                   <input 
                     type="text" 
-                    value={parsedData.type} 
-                    onChange={(e) => setParsedData({...parsedData, type: e.target.value})}
+                    value={parsedData.name} 
+                    onChange={(e) => setParsedData({...parsedData, name: e.target.value})}
                   />
                 </div>
                 <ImportPreview 

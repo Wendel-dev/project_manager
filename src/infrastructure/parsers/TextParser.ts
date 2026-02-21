@@ -1,5 +1,5 @@
 import { IDocumentParser } from './IDocumentParser';
-import { ParsedProject, ParsedTask } from '../../module/interfaces/ParsedProject';
+import { ParsedPhase, ParsedTask } from '../../module/interfaces/ParsedProject';
 
 export class TextParser implements IDocumentParser {
   canHandle(mimeTypeOrExtension: string): boolean {
@@ -7,13 +7,12 @@ export class TextParser implements IDocumentParser {
     return ['txt', 'text/plain'].includes(ext);
   }
 
-  async parse(content: string | Buffer): Promise<ParsedProject> {
+  async parse(content: string | Buffer): Promise<ParsedPhase> {
     const text = typeof content === 'string' ? content : content.toString();
     const lines = text.split('\n');
     
-    const project: ParsedProject = {
-      name: 'Untitled Project',
-      type: 'General',
+    const phase: ParsedPhase = {
+      name: 'Nova Fase',
       tasks: [],
     };
 
@@ -25,12 +24,12 @@ export class TextParser implements IDocumentParser {
       if (!line) continue;
 
       if (line.startsWith('# ')) {
-        project.name = line.substring(2).trim();
+        phase.name = line.substring(2).trim();
       } else if (line.startsWith('## ')) {
         currentArea = line.substring(3).trim();
       } else if (line.startsWith('### ')) {
         if (currentTask) {
-          project.tasks.push(currentTask);
+          phase.tasks.push(currentTask);
         }
         currentTask = {
           title: line.substring(4).trim(),
@@ -53,9 +52,9 @@ export class TextParser implements IDocumentParser {
     }
 
     if (currentTask) {
-      project.tasks.push(currentTask);
+      phase.tasks.push(currentTask);
     }
 
-    return project;
+    return phase;
   }
 }

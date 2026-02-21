@@ -6,8 +6,7 @@ export interface ParsedTask {
   checklists: string[]; // Itens de checklist (- [ ] ou - [x])
 }
 
-export interface ParsedProject {
-  name: string;
-  type: string; // Etapa/Fase inicial sugerida
+export interface ParsedPhase {
+  name: string; // Título do documento (# Titulo) usado como nome da fase
   tasks: ParsedTask[];
 }

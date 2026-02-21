@@ -11,9 +11,9 @@ describe("ParseDocumentUseCase", () => {
   });
 
   test("should select Text parser for .txt", async () => {
-    const content = "# Text Project";
+    const content = "# Test Project";
     const result = await useCase.execute(content, "txt");
-    expect(result.name).toBe("Text Project");
+    expect(result.name).toBe("Test Project");
   });
 
   test("should throw for unsupported type", async () => {
