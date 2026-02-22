@@ -1,4 +1,3 @@
-implementar ver detalhes da tarefa
 agrupar tarefa por área
 criar configuração por codigo
 empacotar serviço

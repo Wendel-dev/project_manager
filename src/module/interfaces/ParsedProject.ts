@@ -1,9 +1,11 @@
+import { ChecklistItem } from './Task';
+
 export interface ParsedTask {
   title: string;
   area?: string;
   description: string;
   targetDate?: string;
-  checklists: string[]; // Itens de checklist (- [ ] ou - [x])
+  checklists: ChecklistItem[]; // Alterado de string[] para ChecklistItem[]
 }
 
 export interface ParsedPhase {

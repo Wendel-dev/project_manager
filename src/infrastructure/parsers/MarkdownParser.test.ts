@@ -25,8 +25,8 @@ Another task
     expect(result.tasks[0].area).toBe("Development");
     expect(result.tasks[0].description).toContain("This is a description");
     expect(result.tasks[0].targetDate).toBe("2023-12-31");
-    expect(result.tasks[0].checklists).toContain("[ ] Subtask 1");
-    expect(result.tasks[0].checklists).toContain("[x] Subtask 2");
+    expect(result.tasks[0].checklists).toContainEqual({ text: "Subtask 1", completed: false });
+    expect(result.tasks[0].checklists).toContainEqual({ text: "Subtask 2", completed: true });
   });
 
   test("should handle missing H1", async () => {

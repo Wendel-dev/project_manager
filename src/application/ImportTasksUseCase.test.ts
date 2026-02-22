@@ -25,7 +25,7 @@ describe("ImportTasksUseCase", () => {
     const parsedProject: ParsedPhase = {
       name: "Fase Importada",
       tasks: [
-        { title: "Task 1", description: "Desc 1", checklists: ["Item 1"] },
+        { title: "Task 1", description: "Desc 1", checklists: [{ text: "Item 1", completed: false }] },
         { title: "Task 2", description: "Desc 2", checklists: [] }
       ]
     };

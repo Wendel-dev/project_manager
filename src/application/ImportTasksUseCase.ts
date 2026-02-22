@@ -26,7 +26,7 @@ export class ImportTasksUseCase {
         description: task.description || null,
         status: 'todo',
         target_date: task.targetDate || null,
-        checklists: task.checklists.length > 0 ? task.checklists.join('\n') : null,
+        checklists: task.checklists.length > 0 ? JSON.stringify(task.checklists) : null,
         doc_element_version_id: null
       });
     }

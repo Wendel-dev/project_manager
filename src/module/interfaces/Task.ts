@@ -1,3 +1,8 @@
+export interface ChecklistItem {
+  text: string;
+  completed: boolean;
+}
+
 export interface TaskData {
   id: number;
   user_id: string;

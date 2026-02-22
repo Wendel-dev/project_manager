@@ -20,6 +20,6 @@ Initialize bun project
     expect(result.tasks[0].title).toBe("Project Setup");
     expect(result.tasks[0].area).toBe("Planning");
     expect(result.tasks[0].targetDate).toBe("2024-01-15");
-    expect(result.tasks[0].checklists).toContain("Install deps");
+    expect(result.tasks[0].checklists).toContainEqual({ text: "Install deps", completed: false });
   });
 });

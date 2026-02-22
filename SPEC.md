@@ -1,55 +1,115 @@
-# Especificação: Modal de Detalhes da Tarefa
+# Especificação Técnica: Correção da Renderização de Subtarefas (Checklists)
 
-## Objetivo
-Implementar uma janela modal que permita aos usuários visualizar e editar todas as informações de uma tarefa, incluindo descrição, data de término e lista de verificação (subtarefas), indo além da visualização básica atual no quadro Kanban.
+## Problema
+Ocorria um erro de parsing de JSON ao tentar renderizar subtarefas (checklists) de uma tarefa no `TaskDetailModal.tsx`. O erro era causado pela inconsistência no formato em que os checklists eram salvos no banco de dados: alguns lugares salvavam como string separada por nova linha (`
+`), enquanto o frontend esperava uma string JSON de objetos `ChecklistItem`.
 
-## Histórias de Usuário
-- **Como usuário**, quero clicar em um card de tarefa no Kanban para abrir seus detalhes.
-- **Como usuário**, quero ver a descrição completa da tarefa para entender o que precisa ser feito.
-- **Como usuário**, quero ver e gerenciar uma lista de subtarefas (checklist) para acompanhar o progresso.
-- **Como usuário**, quero visualizar a data de entrega da tarefa para me planejar.
-- **Como usuário**, quero poder editar essas informações diretamente na modal.
+## Mudanças Necessárias
 
-## Requisitos Funcionais
+### 1. Definir `ChecklistItem` de forma global no Domínio
+Remover a definição de `ChecklistItem` de `src/contexts/ProjectContext.tsx` e movê-la para `src/module/interfaces/Task.ts` para que possa ser usada tanto no frontend quanto nas camadas de aplicação e infraestrutura.
 
-### 1. Visualização de Detalhes
-- Exibir o título da tarefa.
-- Exibir a área da tarefa (Arte, Programação, etc.).
-- Exibir a descrição completa.
-- Exibir a data de término (`target_date`), se houver.
-- Exibir a lista de checklists/subtarefas.
+**Arquivo:** `src/module/interfaces/Task.ts`
+```typescript
+export interface ChecklistItem {
+  text: string;
+  completed: boolean;
+}
 
-### 2. Interação
-- Clicar em um card de tarefa no `KanbanBoard` deve abrir a modal.
-- A modal deve ter um botão de fechamento (X) e fechar ao clicar fora dela.
-- Permitir a edição dos campos (título, descrição, data de término).
-- Permitir adicionar, marcar como concluído e remover itens da checklist.
+export interface TaskData {
+  // ... campos existentes ...
+  checklists?: string | null; // Deve ser sempre uma string JSON de ChecklistItem[]
+}
+```
 
-### 3. Persistência
-- As alterações devem ser salvas no backend usando a função `updateTask` do `ProjectContext`.
+### 2. Atualizar Interface `ParsedTask`
+Alterar o tipo de `checklists` de `string[]` para `ChecklistItem[]`.
 
-## Requisitos Técnicos
+**Arquivo:** `src/module/interfaces/ParsedProject.ts`
+```typescript
+import { ChecklistItem } from './Task';
 
-### Componentes
-- `TaskDetailModal.tsx`: Novo componente para a modal.
-- `KanbanBoard.tsx`: Atualizar para gerenciar o estado da tarefa selecionada e abrir a modal.
+export interface ParsedTask {
+  title: string;
+  area?: string;
+  description: string;
+  targetDate?: string;
+  checklists: ChecklistItem[]; // Alterado de string[] para ChecklistItem[]
+}
+```
 
-### Dados
-- Atualizar a interface `Task` no `ProjectContext.tsx` para incluir `target_date` e `checklists`.
-- Tratar `checklists` como uma estrutura JSON (ex: `Array<{text: string, completed: boolean}>`) que será armazenada como string no banco de dados.
+### 3. Atualizar os Parsers (Markdown e Text)
+Os parsers devem agora criar objetos `ChecklistItem`.
 
-## Plano de Implementação
+**Arquivo:** `src/infrastructure/parsers/MarkdownParser.ts`
+```typescript
+// ... dentro do loop de lista ...
+const isCompleted = item.checked === true;
+const itemText = this.extractTargetDate(this.toString(item), currentTask);
+currentTask.checklists.push({
+  text: itemText.replace(/^\[[ x]\]\s*/, '').trim(),
+  completed: isCompleted
+});
+```
 
-1.  **Ajuste de Tipos**: Atualizar `src/contexts/ProjectContext.tsx` para incluir os campos faltantes na interface `Task`.
-2.  **Criação do Componente**: Desenvolver `src/components/TaskDetailModal.tsx` com suporte a exibição e edição.
-3.  **Integração no Kanban**: Adicionar estado `selectedTask` no `KanbanBoard.tsx` e lógica para abrir/fechar a modal.
-4.  **Estilização**: Adicionar estilos necessários em `src/styles/main.css` ou arquivo específico.
-5.  **Testes**: Verificar se as atualizações são refletidas corretamente no Kanban após fechar a modal.
+**Arquivo:** `src/infrastructure/parsers/TextParser.ts`
+```typescript
+// ... dentro da condição de lista ...
+const isCompleted = line.startsWith('- [x] ');
+const itemText = line.replace(/^- (\[[ x]\] )?/, '').trim();
+currentTask.checklists.push({
+  text: itemText,
+  completed: isCompleted
+});
+```
 
-## Design Sugerido (UX)
-- **Overlay**: Fundo escurecido semi-transparente.
-- **Container**: Centralizado, com largura máxima de 600px, fundo branco e bordas arredondadas.
-- **Seções**:
-    - Cabeçalho: Título e Área.
-    - Corpo: Descrição (Textarea), Data (Input date), Checklist (Lista de itens com checkbox).
-    - Rodapé: Botões de Salvar/Fechar.
+### 4. Atualizar os Casos de Uso (Application Layer)
+Garantir que ao criar/atualizar tarefas, os checklists sejam salvos como JSON.
+
+**Arquivos:** `src/application/AddProjectUseCase.ts`, `src/application/TransitionPhaseUseCase.ts`, `src/application/ImportTasksUseCase.ts`
+```typescript
+// De:
+checklists: task.checklists && task.checklists.length > 0 ? task.checklists.join('
+') : null,
+
+// Para:
+checklists: task.checklists && task.checklists.length > 0 ? JSON.stringify(task.checklists) : null,
+```
+
+### 5. Robustez no Frontend (`TaskDetailModal.tsx`)
+Atualizar o parsing para ser resiliente a dados legados (strings separadas por `
+`).
+
+**Arquivo:** `src/components/TaskDetailModal.tsx`
+```typescript
+  const checklists: ChecklistItem[] = (() => {
+    if (!editedTask.checklists) return [];
+    try {
+      const parsed = JSON.parse(editedTask.checklists);
+      if (Array.isArray(parsed)) {
+        // Suporte a legado: se for array de strings, converter
+        if (typeof parsed[0] === 'string') {
+          return (parsed as string[]).map(s => ({
+            text: s.replace(/^\[[ x]\]\s*/, '').trim(),
+            completed: s.startsWith('[x]')
+          }));
+        }
+        return parsed;
+      }
+      return [];
+    } catch (e) {
+      // Fallback para formato de nova linha (legado antigo)
+      return editedTask.checklists.split('
+').map(line => ({
+        text: line.replace(/^\[[ x]\]\s*/, '').trim(),
+        completed: line.startsWith('[x]')
+      })).filter(item => item.text.length > 0);
+    }
+  })();
+```
+
+## Validação
+1. Importar um novo projeto via Markdown/Text.
+2. Abrir uma tarefa e verificar se os checklists aparecem.
+3. Marcar/desmarcar itens do checklist e salvar.
+4. Reabrir e verificar se o estado foi mantido.

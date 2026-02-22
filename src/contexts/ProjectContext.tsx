@@ -2,16 +2,12 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from "
 import type { ReactNode } from "react";
 import { ProjectRepositoryAPI } from "../infrastructure/ProjectRepositoryAPI";
 import type { ProjectData, ProjectType } from "../module/interfaces/Project";
+import type { ChecklistItem } from "../module/interfaces/Task";
 import type { ParsedPhase } from "../module/interfaces/ParsedProject";
 import type { DocElementData, ParsedDocSection } from "../module/interfaces/Doc";
 import { useAuth } from "./AuthContext";
 
 export type Project = ProjectData;
-
-export interface ChecklistItem {
-  text: string;
-  completed: boolean;
-}
 
 export interface Task {
   id: number;

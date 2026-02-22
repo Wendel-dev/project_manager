@@ -37,11 +37,17 @@ export class TextParser implements IDocumentParser {
           description: '',
           checklists: [],
         };
-      } else if (line.startsWith('- [ ] ') || line.startsWith('- [x] ') || line.startsWith('- ')) {
-        if (currentTask) {
-          currentTask.checklists.push(line.replace(/^- (\[[ x]\] )?/, '').trim());
-        }
-      } else if (currentTask) {
+            } else if (line.startsWith('- [ ] ') || line.startsWith('- [x] ') || line.startsWith('- ')) {
+              if (currentTask) {
+                const isCompleted = line.startsWith('- [x] ');
+                const itemText = line.replace(/^- (\[[ x]\] )?/, '').trim();
+                currentTask.checklists.push({
+                  text: itemText,
+                  completed: isCompleted
+                });
+              }
+            }
+       else if (currentTask) {
         const dateMatch = line.match(/@targetDate\s+(\d{4}-\d{2}-\d{2})/);
         if (dateMatch) {
           currentTask.targetDate = dateMatch[1];

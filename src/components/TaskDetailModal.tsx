@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useProject, Task, ChecklistItem } from '../contexts/ProjectContext';
+import { useProject, Task } from '../contexts/ProjectContext';
+import { ChecklistItem } from '../module/interfaces/Task';
 
 interface TaskDetailModalProps {
   task: Task;
@@ -49,10 +50,24 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, onClose
   const checklists: ChecklistItem[] = (() => {
     if (!editedTask.checklists) return [];
     try {
-      return JSON.parse(editedTask.checklists);
-    } catch (e) {
-      console.error("Error parsing checklists JSON:", e);
+      const parsed = JSON.parse(editedTask.checklists);
+      if (Array.isArray(parsed)) {
+        // Suporte a legado: se for array de strings, converter
+        if (typeof parsed[0] === 'string') {
+          return (parsed as string[]).map(s => ({
+            text: s.replace(/^\[[ x]\]\s*/, '').trim(),
+            completed: s.startsWith('[x]')
+          }));
+        }
+        return parsed;
+      }
       return [];
+    } catch (e) {
+      // Fallback para formato de nova linha (legado antigo)
+      return editedTask.checklists.split('\n').map(line => ({
+        text: line.replace(/^\[[ x]\]\s*/, '').trim(),
+        completed: line.startsWith('[x]')
+      })).filter(item => item.text.length > 0);
     }
   })();
 

@@ -51,17 +51,15 @@ export class MarkdownParser implements IDocumentParser {
         if (currentTask) {
           for (const item of node.children) {
             if (item.type === 'listItem') {
-               let itemText = this.toString(item);
-               itemText = this.extractTargetDate(itemText, currentTask);
-               
-               const check = item.checked !== null ? (item.checked ? '[x] ' : '[ ] ') : '';
-               // If itemText already has the checkbox, don't duplicate it.
-               // Some remark parsers might include it in the text.
-               const finalItem = itemText.startsWith('[ ]') || itemText.startsWith('[x]') 
-                 ? itemText 
-                 : check + itemText;
-               
-               currentTask.checklists.push(finalItem);
+              let itemText = this.toString(item);
+              itemText = this.extractTargetDate(itemText, currentTask);
+              
+              const isCompleted = item.checked === true || itemText.startsWith('[x]');
+              
+              currentTask.checklists.push({
+                text: itemText.replace(/^\[[ x]\]\s*/, '').trim(),
+                completed: isCompleted
+              });
             }
           }
         }
