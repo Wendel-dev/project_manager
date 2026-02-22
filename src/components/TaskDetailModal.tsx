@@ -15,10 +15,11 @@ const AREAS = {
 };
 
 const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, onClose }) => {
-  const { selectedProject, updateTask } = useProject();
+  const { selectedProject, updateTask, deleteTask } = useProject();
   const [editedTask, setEditedTask] = useState<Task>({ ...task });
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     setEditedTask({ ...task });
@@ -45,6 +46,21 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, onClose
       alert("Erro ao salvar tarefa.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm("Tem certeza que deseja excluir esta tarefa?")) {
+      setIsDeleting(true);
+      try {
+        await deleteTask(task.id);
+        onClose();
+      } catch (error) {
+        console.error("Error deleting task:", error);
+        alert("Erro ao excluir tarefa.");
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -178,10 +194,15 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, onClose
         </div>
 
         <div className="modal-footer">
-          <button className="cancel-btn" onClick={onClose}>Fechar</button>
-          <button className="save-btn" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+          <button className="delete-btn" onClick={handleDelete} disabled={isDeleting}>
+            {isDeleting ? 'Excluindo...' : 'Excluir Tarefa'}
           </button>
+          <div className="footer-actions">
+            <button className="cancel-btn" onClick={onClose}>Fechar</button>
+            <button className="save-btn" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

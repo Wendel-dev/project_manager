@@ -70,4 +70,8 @@ export class TaskRepository implements ITaskRepository {
       WHERE t.project_id = ? AND t.user_id = ? AND t.doc_element_version_id != de.current_version_id
     `).all(projectId, userId);
   }
+
+  async delete(userId: string, id: number): Promise<void> {
+    db.query("DELETE FROM tasks WHERE id = ? AND user_id = ?").run(id, userId);
+  }
 }

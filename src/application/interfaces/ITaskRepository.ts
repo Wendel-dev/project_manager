@@ -8,4 +8,5 @@ export interface ITaskRepository {
   getAreaStats(userId: string, projectId: number): Promise<{ area: string, todo_count: number, done_count: number }[]>;
   getInertiaTasks(userId: string, projectId: number): Promise<{ id: number, title: string, started_doing_at: string }[]>;
   getOutdatedTasks(userId: string, projectId: number): Promise<any[]>;
+  delete(userId: string, id: number): Promise<void>;
 }

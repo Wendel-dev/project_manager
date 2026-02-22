@@ -37,6 +37,7 @@ interface ProjectContextType {
   fetchProjects: () => Promise<void>;
   addTask: (title: string, area: string, description?: string, doc_element_version_id?: number|null) => Promise<void>;
   updateTask: (id: number, updates: Partial<Task>) => Promise<void>;
+  deleteTask: (id: number) => Promise<void>;
   addDoc: (title: string, content: string, element_id?: number, parent_id?: number | null) => Promise<void>;
   fetchDocs: (projectId: number) => Promise<void>;
   parseDocument: (file: File) => Promise<ParsedPhase>;
@@ -209,6 +210,25 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
+  const deleteTask = async (id: number) => {
+    if (!selectedProject || !token) return;
+    try {
+      const response = await fetch(`/api/tasks/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (response.ok) {
+        await fetchTasks(selectedProject.id);
+      } else {
+        const err = await response.json();
+        throw new Error(err.error || "Failed to delete task");
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      throw error;
+    }
+  };
+
   const addDoc = async (title: string, content: string, element_id?: number, parent_id?: number | null) => {
     if (!selectedProject || !token) return;
     try {
@@ -328,6 +348,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       fetchProjects,
       addTask,
       updateTask,
+      deleteTask,
       addDoc,
       fetchDocs,
       parseDocument,

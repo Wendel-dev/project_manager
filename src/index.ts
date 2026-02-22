@@ -9,6 +9,7 @@ import { DeleteProjectUseCase } from "./application/DeleteProjectUseCase";
 import { GetTasksUseCase } from "./application/GetTasksUseCase";
 import { AddTaskUseCase } from "./application/AddTaskUseCase";
 import { UpdateTaskUseCase } from "./application/UpdateTaskUseCase";
+import { DeleteTaskUseCase } from "./application/DeleteTaskUseCase";
 import { SaveDocUseCase } from "./application/SaveDocUseCase";
 import { GetGovernanceUseCase } from "./application/GetGovernanceUseCase";
 import { ParseDocumentUseCase } from "./application/ParseDocumentUseCase";
@@ -32,6 +33,7 @@ const deleteProjectUseCase = new DeleteProjectUseCase(projectRepo);
 const getTasksUseCase = new GetTasksUseCase(taskRepo);
 const addTaskUseCase = new AddTaskUseCase(taskRepo);
 const updateTaskUseCase = new UpdateTaskUseCase(taskRepo);
+const deleteTaskUseCase = new DeleteTaskUseCase(taskRepo);
 const getDocTreeUseCase = new GetDocTreeUseCase(docRepo);
 const saveDocUseCase = new SaveDocUseCase(docRepo);
 const getGovernanceUseCase = new GetGovernanceUseCase(taskRepo);
@@ -229,6 +231,13 @@ const server = serve({
           const id = parseInt(req.params.id);
           const updates = await req.json();
           await updateTaskUseCase.execute(userId, id, updates);
+          return Response.json({ success: true });
+        });
+      },
+      async DELETE(req) {
+        return handleProtected(req, async (userId) => {
+          const id = parseInt(req.params.id);
+          await deleteTaskUseCase.execute(userId, id);
           return Response.json({ success: true });
         });
       },

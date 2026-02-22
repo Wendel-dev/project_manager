@@ -1,3 +1,2 @@
-excluir tarefa
 criar configuração por codigo
 empacotar serviço
