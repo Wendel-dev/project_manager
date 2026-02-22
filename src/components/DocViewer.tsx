@@ -1,5 +1,5 @@
 import React from 'react';
-import { DocElement } from '../contexts/ProjectContext';
+import type { DocElement } from '../contexts/ProjectContext';
 
 interface DocViewerProps {
   doc: DocElement;

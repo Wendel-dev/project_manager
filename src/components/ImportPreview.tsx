@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ParsedPhase, ParsedTask } from '../module/interfaces/ParsedProject';
+import type { ParsedPhase, ParsedTask } from '../module/interfaces/ParsedProject';
 
 interface ImportPreviewProps {
   parsedProject: ParsedPhase;

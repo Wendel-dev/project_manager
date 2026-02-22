@@ -6,8 +6,8 @@ export const PHASES: Record<ProjectType, string[]> = {
 };
 
 export class ProjectModule {
-  static getInitialPhase(type: ProjectType): string | undefined {
-    return PHASES[type][0];
+  static getInitialPhase(type: ProjectType): string {
+    return PHASES[type][0]||"";
   }
 
   static getPhases(type: ProjectType): string[] {

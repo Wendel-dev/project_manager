@@ -39,7 +39,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
         type="file" 
         id="fileInput" 
         style={{ display: 'none' }} 
-        onChange={(e) => e.target.files && handleFile(e.target.files[0])}
+        onChange={(e) => {
+          let file = e.target.files?.[0];
+          if(file)
+            handleFile(file)
+        }}
         accept=".md,.txt,.pdf"
       />
       <label htmlFor="fileInput" className="file-upload-label">

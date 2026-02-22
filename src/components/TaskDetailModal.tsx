@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useProject, Task } from '../contexts/ProjectContext';
-import { ChecklistItem } from '../module/interfaces/Task';
+import { useProject } from '../contexts/ProjectContext';
+import type { Task } from '../contexts/ProjectContext';
+import type { ChecklistItem } from '../module/interfaces/Task';
 
 interface TaskDetailModalProps {
   task: Task;
@@ -80,7 +81,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, onClose
 
   const toggleChecklistItem = (index: number) => {
     const newItems = [...checklists];
-    newItems[index].completed = !newItems[index].completed;
+    newItems[index]!.completed = !newItems[index]!.completed;
     updateChecklists(newItems);
   };
 

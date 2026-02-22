@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useProject } from '../contexts/ProjectContext';
-import { useAuth } from '../contexts/AuthContext';
 import { PHASES } from '../module/Project';
 import FileUpload from './FileUpload';
 import ImportPreview from './ImportPreview';

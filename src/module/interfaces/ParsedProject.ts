@@ -1,4 +1,4 @@
-import { ChecklistItem } from './Task';
+import type { ChecklistItem } from './Task';
 
 export interface ParsedTask {
   title: string;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import type { Task } from '../contexts/ProjectContext';
 import TaskDetailModal from './TaskDetailModal';
@@ -15,6 +15,28 @@ const KanbanBoard: React.FC = () => {
   const [newTaskDocId, setNewTaskDocId] = useState<number | ''>('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedTaskForModal, setSelectedTaskForModal] = useState<Task | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const groupedTasks = useMemo(() => {
+    const groups: Record<string, Record<string, Task[]>> = {
+      todo: {},
+      doing: {},
+      done: {}
+    };
+
+    const taskList = Array.isArray(tasks) ? tasks : [];
+    taskList.forEach(task => {
+      let group = groups[task.status];
+      if (group) {
+        if (!group[task.area]) {
+          group[task.area] = [];
+        }
+        group[task.area]!.push(task);
+      }
+    });
+
+    return groups;
+  }, [tasks]);
 
   if (!selectedProject) return null;
 
@@ -38,6 +60,18 @@ const KanbanBoard: React.FC = () => {
     e.stopPropagation(); // Avoid opening the modal when clicking move buttons
     updateTask(task.id, { status: newStatus });
   };
+
+  const toggleGroup = (status: string, area: string) => {
+    const key = `${status}-${area}`;
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const isCollapsed = (status: string, area: string) => collapsedGroups.has(`${status}-${area}`);
 
   return (
     <div className="kanban">
@@ -85,15 +119,36 @@ const KanbanBoard: React.FC = () => {
           <div key={status} className={`kanban-column ${status}`}>
             <h3>{status.toUpperCase()}</h3>
             <div className="task-list">
-              {(Array.isArray(tasks) ? tasks : []).filter(t => t.status === status).map(task => (
-                <div key={task.id} className="task-card" onClick={() => setSelectedTaskForModal(task)}>
-                  <h4>{task.title}</h4>
-                  <p className="task-area">{task.area}</p>
-                  <div className="task-actions">
-                    {status !== 'todo' && <button onClick={(e) => moveTask(e, task, 'todo')}>Todo</button>}
-                    {status !== 'doing' && <button onClick={(e) => moveTask(e, task, 'doing')}>Doing</button>}
-                    {status !== 'done' && <button onClick={(e) => moveTask(e, task, 'done')}>Done</button>}
+              {Object.entries(groupedTasks[status]!).map(([area, areaTasks]) => (
+                <div key={`${status}-${area}`} className="task-group">
+                  <div 
+                    className="group-header" 
+                    onClick={() => toggleGroup(status, area)}
+                  >
+                    <span className={`collapse-icon ${isCollapsed(status, area) ? 'collapsed' : ''}`}>▼</span>
+                    <span className="group-title">{area}</span>
+                    <span className="group-count">({areaTasks.length})</span>
                   </div>
+                  
+                  {!isCollapsed(status, area) && (
+                    <div className="group-content">
+                      {areaTasks.map(task => (
+                        <div 
+                          key={task.id} 
+                          className="task-card" 
+                          onClick={() => setSelectedTaskForModal(task)}
+                        >
+                          <h4>{task.title}</h4>
+                          <p className="task-area">{task.area}</p>
+                          <div className="task-actions">
+                            {status !== 'todo' && <button onClick={(e) => moveTask(e, task, 'todo')}>Todo</button>}
+                            {status !== 'doing' && <button onClick={(e) => moveTask(e, task, 'doing')}>Doing</button>}
+                            {status !== 'done' && <button onClick={(e) => moveTask(e, task, 'done')}>Done</button>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -111,5 +166,6 @@ const KanbanBoard: React.FC = () => {
     </div>
   );
 };
+
 
 export default KanbanBoard;

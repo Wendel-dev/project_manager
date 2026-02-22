@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useProject } from '../contexts/ProjectContext';
-import { useAuth } from '../contexts/AuthContext';
 import KanbanBoard from './KanbanBoard';
 import DocEditor from './DocEditor';
 import GovernanceAlerts from './GovernanceAlerts';
