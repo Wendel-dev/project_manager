@@ -1,0 +1,175 @@
+import React, { useState, useEffect } from 'react';
+import { useProject, Task, ChecklistItem } from '../contexts/ProjectContext';
+
+interface TaskDetailModalProps {
+  task: Task;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const AREAS = {
+  jogo: ['Arte', 'Programação', 'Design', 'Som'],
+  aplicativo: ['UX', 'Frontend', 'Backend', 'Devops']
+};
+
+const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, onClose }) => {
+  const { selectedProject, updateTask } = useProject();
+  const [editedTask, setEditedTask] = useState<Task>({ ...task });
+  const [newChecklistItem, setNewChecklistItem] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setEditedTask({ ...task });
+  }, [task]);
+
+  if (!isOpen || !selectedProject) return null;
+
+  const projectAreas = AREAS[selectedProject.type as keyof typeof AREAS] || [];
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await updateTask(task.id, {
+        title: editedTask.title,
+        description: editedTask.description,
+        area: editedTask.area,
+        status: editedTask.status,
+        target_date: editedTask.target_date,
+        checklists: editedTask.checklists,
+      });
+      onClose();
+    } catch (error) {
+      console.error("Error saving task:", error);
+      alert("Erro ao salvar tarefa.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const checklists: ChecklistItem[] = (() => {
+    if (!editedTask.checklists) return [];
+    try {
+      return JSON.parse(editedTask.checklists);
+    } catch (e) {
+      console.error("Error parsing checklists JSON:", e);
+      return [];
+    }
+  })();
+
+  const updateChecklists = (newItems: ChecklistItem[]) => {
+    setEditedTask({
+      ...editedTask,
+      checklists: JSON.stringify(newItems)
+    });
+  };
+
+  const toggleChecklistItem = (index: number) => {
+    const newItems = [...checklists];
+    newItems[index].completed = !newItems[index].completed;
+    updateChecklists(newItems);
+  };
+
+  const addChecklistItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newChecklistItem.trim()) {
+      const newItems = [...checklists, { text: newChecklistItem.trim(), completed: false }];
+      updateChecklists(newItems);
+      setNewChecklistItem('');
+    }
+  };
+
+  const removeChecklistItem = (index: number) => {
+    const newItems = checklists.filter((_, i) => i !== index);
+    updateChecklists(newItems);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content task-detail-modal" onClick={e => e.stopPropagation()}>
+        <button className="close-btn" onClick={onClose}>×</button>
+        
+        <div className="modal-header">
+          <input 
+            type="text" 
+            className="task-title-input"
+            value={editedTask.title}
+            onChange={e => setEditedTask({ ...editedTask, title: e.target.value })}
+          />
+          <div className="task-meta">
+            <select 
+              value={editedTask.area}
+              onChange={e => setEditedTask({ ...editedTask, area: e.target.value })}
+            >
+              {projectAreas.map(area => (
+                <option key={area} value={area}>{area}</option>
+              ))}
+            </select>
+            <select 
+              value={editedTask.status}
+              onChange={e => setEditedTask({ ...editedTask, status: e.target.value as any })}
+            >
+              <option value="todo">To Do</option>
+              <option value="doing">Doing</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="modal-body">
+          <section className="modal-section">
+            <label>Descrição</label>
+            <textarea 
+              value={editedTask.description || ''}
+              onChange={e => setEditedTask({ ...editedTask, description: e.target.value })}
+              placeholder="Adicione uma descrição detalhada..."
+            />
+          </section>
+
+          <section className="modal-section">
+            <label>Data de Entrega</label>
+            <input 
+              type="date" 
+              value={editedTask.target_date || ''}
+              onChange={e => setEditedTask({ ...editedTask, target_date: e.target.value })}
+            />
+          </section>
+
+          <section className="modal-section">
+            <label>Checklist</label>
+            <div className="checklist-container">
+              {checklists.map((item, index) => (
+                <div key={index} className="checklist-item">
+                  <input 
+                    type="checkbox" 
+                    checked={item.completed} 
+                    onChange={() => toggleChecklistItem(index)}
+                  />
+                  <span className={item.completed ? 'completed' : ''}>{item.text}</span>
+                  <button className="remove-item" onClick={() => removeChecklistItem(index)}>×</button>
+                </div>
+              ))}
+              <form onSubmit={addChecklistItem} className="add-checklist-form">
+                <input 
+                  type="text" 
+                  placeholder="Adicionar item..."
+                  value={newChecklistItem}
+                  onChange={e => setNewChecklistItem(e.target.value)}
+                />
+                <button type="submit">Adicionar</button>
+              </form>
+            </div>
+          </section>
+        </div>
+
+        <div className="modal-footer">
+          <button className="cancel-btn" onClick={onClose}>Fechar</button>
+          <button className="save-btn" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TaskDetailModal;

@@ -8,16 +8,23 @@ import { useAuth } from "./AuthContext";
 
 export type Project = ProjectData;
 
+export interface ChecklistItem {
+  text: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: number;
   project_id: number;
   title: string;
-  description: string;
+  description: string | null;
   area: string;
   status: 'todo' | 'doing' | 'done';
-  doc_element_version_id?: number;
+  target_date?: string | null;
+  checklists?: string | null; // JSON string of ChecklistItem[]
+  doc_element_version_id?: number | null;
   updated_at: string;
-  started_doing_at?: string;
+  started_doing_at?: string | null;
 }
 
 export interface DocElement extends DocElementData {
@@ -32,7 +39,7 @@ interface ProjectContextType {
   selectProject: (id: number) => void;
   addProject: (name: string, type: ProjectType, initialPhaseName?: string, tasks?: ParsedPhase['tasks']) => Promise<void>;
   fetchProjects: () => Promise<void>;
-  addTask: (title: string, area: string, description?: string, doc_element_version_id?: number) => Promise<void>;
+  addTask: (title: string, area: string, description?: string, doc_element_version_id?: number|null) => Promise<void>;
   updateTask: (id: number, updates: Partial<Task>) => Promise<void>;
   addDoc: (title: string, content: string, element_id?: number, parent_id?: number | null) => Promise<void>;
   fetchDocs: (projectId: number) => Promise<void>;
@@ -174,7 +181,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const addTask = async (title: string, area: string, description?: string, doc_element_version_id?: number) => {
+  const addTask = async (title: string, area: string, description?: string, doc_element_version_id?: number|null) => {
     if (!selectedProject || !token) return;
     try {
       const response = await fetch(`/api/projects/${selectedProject.id}/tasks`, {

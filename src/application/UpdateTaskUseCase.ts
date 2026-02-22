@@ -10,7 +10,7 @@ export class UpdateTaskUseCase {
     }
 
     // Special logic for started_doing_at
-    if (updates.status === 'doing') {
+    if (updates.status === 'doing' && !updates.started_doing_at) {
       updates.started_doing_at = new Date().toISOString();
     } else if (updates.status === 'done' || updates.status === 'todo') {
       updates.started_doing_at = null;

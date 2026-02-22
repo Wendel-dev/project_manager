@@ -1,54 +1,55 @@
-# Especificação Técnica: Excluir Projeto
+# Especificação: Modal de Detalhes da Tarefa
 
-## 1. Visão Geral
-O objetivo é implementar a funcionalidade de exclusão de um projeto no sistema. Esta operação deve ser segura, exigindo confirmação do usuário, e deve garantir a integridade do banco de dados ao remover todas as dependências associadas (tarefas, documentos e versões).
+## Objetivo
+Implementar uma janela modal que permita aos usuários visualizar e editar todas as informações de uma tarefa, incluindo descrição, data de término e lista de verificação (subtarefas), indo além da visualização básica atual no quadro Kanban.
 
-## 2. Requisitos Funcionais
-- **Botão de Exclusão:** Disponibilizar uma opção de "Excluir Projeto" na interface (ex: Dashboard ou Sidebar).
-- **Confirmação:** Exibir um modal ou alerta de confirmação antes de proceder com a exclusão.
-- **Remoção Completa:** Excluir o projeto e todos os seus dados relacionados (Tarefas, Elementos de Documentação e Versões de Documentos).
-- **Atualização de Estado:** Após a exclusão, a lista de projetos deve ser atualizada e o projeto selecionado deve ser limpo.
+## Histórias de Usuário
+- **Como usuário**, quero clicar em um card de tarefa no Kanban para abrir seus detalhes.
+- **Como usuário**, quero ver a descrição completa da tarefa para entender o que precisa ser feito.
+- **Como usuário**, quero ver e gerenciar uma lista de subtarefas (checklist) para acompanhar o progresso.
+- **Como usuário**, quero visualizar a data de entrega da tarefa para me planejar.
+- **Como usuário**, quero poder editar essas informações diretamente na modal.
 
-## 3. Detalhes Técnicos
+## Requisitos Funcionais
 
-### 3.1 Banco de Dados (SQLite)
-Como o schema atual não utiliza `ON DELETE CASCADE`, a exclusão deve ser feita de forma manual e ordenada no repositório para evitar órfãos:
-1. `doc_element_versions` (via JOIN com `doc_elements`)
-2. `doc_elements`
-3. `tasks`
-4. `projects`
+### 1. Visualização de Detalhes
+- Exibir o título da tarefa.
+- Exibir a área da tarefa (Arte, Programação, etc.).
+- Exibir a descrição completa.
+- Exibir a data de término (`target_date`), se houver.
+- Exibir a lista de checklists/subtarefas.
 
-### 3.2 Alterações na API
-- **Nova Rota:** `DELETE /api/projects/:id`
-- **Middleware:** Deve ser uma rota protegida (requer autenticação).
+### 2. Interação
+- Clicar em um card de tarefa no `KanbanBoard` deve abrir a modal.
+- A modal deve ter um botão de fechamento (X) e fechar ao clicar fora dela.
+- Permitir a edição dos campos (título, descrição, data de término).
+- Permitir adicionar, marcar como concluído e remover itens da checklist.
 
-### 3.3 Componentes de Software
-- **IProjectRepository:** Adicionar método `delete(userId: string, id: number)`.
-- **DeleteProjectUseCase:** Novo caso de uso para gerenciar a lógica de exclusão.
-- **ProjectContext:** Adicionar função `deleteProject(id: number)` para integração com o frontend.
+### 3. Persistência
+- As alterações devem ser salvas no backend usando a função `updateTask` do `ProjectContext`.
 
-## 4. Plano de Implementação Passo a Passo
+## Requisitos Técnicos
 
-### Passo 1: Camada de Domínio e Infraestrutura
-1.  Atualizar `src/application/interfaces/IProjectRepository.ts` com o método `delete`.
-2.  Implementar o método `delete` em `src/infrastructure/ProjectRepository.ts`.
-    - *Nota: Realizar as deleções em ordem reversa de dependência.*
+### Componentes
+- `TaskDetailModal.tsx`: Novo componente para a modal.
+- `KanbanBoard.tsx`: Atualizar para gerenciar o estado da tarefa selecionada e abrir a modal.
 
-### Passo 2: Camada de Aplicação
-1.  Criar `src/application/DeleteProjectUseCase.ts`.
-2.  Instanciar e configurar o use case em `src/index.ts`.
+### Dados
+- Atualizar a interface `Task` no `ProjectContext.tsx` para incluir `target_date` e `checklists`.
+- Tratar `checklists` como uma estrutura JSON (ex: `Array<{text: string, completed: boolean}>`) que será armazenada como string no banco de dados.
 
-### Passo 3: API (Backend)
-1.  Adicionar o endpoint `DELETE /api/projects/:id` em `src/index.ts`.
-2.  Testar a rota com um cliente HTTP ou script simples.
+## Plano de Implementação
 
-### Passo 4: Frontend (Contexto e UI)
-1.  Atualizar `src/contexts/ProjectContext.tsx` para incluir a lógica de chamada à API de exclusão.
-2.  Adicionar um botão de exclusão no componente `src/components/ProjectDashboard.tsx` ou `src/components/Sidebar.tsx`.
-3.  Implementar o `window.confirm` ou um modal customizado para confirmação.
+1.  **Ajuste de Tipos**: Atualizar `src/contexts/ProjectContext.tsx` para incluir os campos faltantes na interface `Task`.
+2.  **Criação do Componente**: Desenvolver `src/components/TaskDetailModal.tsx` com suporte a exibição e edição.
+3.  **Integração no Kanban**: Adicionar estado `selectedTask` no `KanbanBoard.tsx` e lógica para abrir/fechar a modal.
+4.  **Estilização**: Adicionar estilos necessários em `src/styles/main.css` ou arquivo específico.
+5.  **Testes**: Verificar se as atualizações são refletidas corretamente no Kanban após fechar a modal.
 
-## 5. Critérios de Aceite
-- [ ] O projeto é removido da lista lateral após a exclusão.
-- [ ] Todas as tarefas associadas ao projeto são removidas do banco de dados.
-- [ ] Todos os documentos e suas versões associadas são removidos do banco de dados.
-- [ ] Não é possível excluir um projeto que não pertence ao usuário logado.
+## Design Sugerido (UX)
+- **Overlay**: Fundo escurecido semi-transparente.
+- **Container**: Centralizado, com largura máxima de 600px, fundo branco e bordas arredondadas.
+- **Seções**:
+    - Cabeçalho: Título e Área.
+    - Corpo: Descrição (Textarea), Data (Input date), Checklist (Lista de itens com checkbox).
+    - Rodapé: Botões de Salvar/Fechar.
