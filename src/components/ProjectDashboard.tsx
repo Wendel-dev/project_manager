@@ -7,7 +7,7 @@ import PhaseTransitionModal from './PhaseTransitionModal';
 import { ProjectModule } from '../module/Project';
 
 const ProjectDashboard: React.FC = () => {
-  const { selectedProject, tasks, transitionPhase, deleteProject } = useProject();
+  const { selectedProject, tasks, transitionPhase, deleteProject, exportProjectDocs, docs } = useProject();
   const [activeTab, setActiveTab] = useState<'kanban' | 'docs' | 'gov'>('kanban');
   const [phaseError, setPhaseError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -61,7 +61,18 @@ const ProjectDashboard: React.FC = () => {
         <div className="header-top">
           <div className="header-title-container">
             <h1>{selectedProject.name}</h1>
-            <button className="delete-project-btn" onClick={handleDeleteProject}>Excluir Projeto</button>
+            <div className="header-actions">
+              {activeTab === 'docs' && (
+                <button 
+                  className="export-docs-btn" 
+                  onClick={exportProjectDocs}
+                  disabled={docs.length === 0}
+                >
+                  Exportar Documentação (.md)
+                </button>
+              )}
+              <button className="delete-project-btn" onClick={handleDeleteProject}>Excluir Projeto</button>
+            </div>
           </div>
           <div className="phase-progression">
             <span>Fase: <strong>{selectedProject.current_phase}</strong></span>

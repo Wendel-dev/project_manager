@@ -6,6 +6,8 @@ import type { ChecklistItem } from "../module/interfaces/Task";
 import type { ParsedPhase } from "../module/interfaces/ParsedProject";
 import type { DocElementData, ParsedDocSection } from "../module/interfaces/Doc";
 import { useAuth } from "./AuthContext";
+import { ExportDocUseCase } from "../application/ExportDocUseCase";
+import type { DocTreeNode } from "../application/GetDocTreeUseCase";
 
 export type Project = ProjectData;
 
@@ -46,6 +48,7 @@ interface ProjectContextType {
   importProject: (parsedProject: ParsedPhase) => Promise<void>;
   transitionPhase: (projectId: number, nextPhaseName: string, tasks?: ParsedPhase['tasks']) => Promise<void>;
   deleteProject: (id: number) => Promise<void>;
+  exportProjectDocs: () => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -176,6 +179,24 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       console.error("Error deleting project:", error);
       throw error;
     }
+  };
+
+  const exportProjectDocs = async () => {
+    if (!selectedProject || docs.length === 0) return;
+
+    const exportUseCase = new ExportDocUseCase();
+    const markdown = await exportUseCase.execute(docs as DocTreeNode[]);
+
+    // Trigger download
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${selectedProject.name.toLowerCase().replace(/\s+/g, '-')}-docs.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const addTask = async (title: string, area: string, description?: string, doc_element_version_id?: number|null) => {
@@ -356,7 +377,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       importDocHierarchy,
       importProject,
       transitionPhase,
-      deleteProject
+      deleteProject,
+      exportProjectDocs
     }}>
       {children}
     </ProjectContext.Provider>

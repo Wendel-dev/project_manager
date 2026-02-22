@@ -691,6 +691,30 @@ body {
   color: white;
 }
 
+.export-docs-btn {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  background-color: var(--primary);
+  color: white;
+  border: 1px solid var(--primary);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.export-docs-btn:hover:not(:disabled) {
+  background-color: #4338ca;
+  border-color: #4338ca;
+}
+
+.export-docs-btn:disabled {
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
 .phase-error {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
