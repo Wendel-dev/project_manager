@@ -1,7 +1,7 @@
 import type { ProjectType } from "@/module/interfaces/Project";
 
 export const PHASES: Record<ProjectType, string[]> = {
-  jogo: ['Concepção', 'Pré-produção', 'Produção', 'Polimento', 'Lançamento'],
+  jogo: ['Conceito', 'Protótipo', 'Alpha', 'Beta', 'Gold','Pós-lançamento'],
   aplicativo: ['Pesquisa UX', 'MVP', 'Beta', 'Escalamento', 'Manutenção']
 };
 

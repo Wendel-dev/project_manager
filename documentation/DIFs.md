@@ -20,11 +20,6 @@ Este documento detalha as discrepâncias encontradas entre o documento de especi
 
 ## Módulo 4: Ciclo de Vida do Jogo (Workflow Rígido)
 
-### 4.1. Régua de Fases
-*   **Especificação**: Divisão obrigatória em: `Conceito` → `Protótipo` → `Alpha` → `Beta` → `Gold`.
-*   **Implementação**: Utiliza nomes diferentes para jogos: `Concepção` → `Pré-produção` → `Produção` → `Polimento` → `Lançamento`.
-    *   *Arquivo relacionado*: `src/module/Project.ts`
-
 ### 4.2. Gate de Pendências (Soft-Gate)
 *   **Especificação**: Ao mudar de fase, o sistema deve listar tarefas não concluídas e isolá-las na fase anterior.
 *   **Implementação**: **Não implementado**. A transição de fase apenas atualiza o status do projeto. Não há verificação de tarefas pendentes nem isolamento de contexto.
