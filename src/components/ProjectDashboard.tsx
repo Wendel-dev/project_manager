@@ -115,13 +115,15 @@ const ProjectDashboard: React.FC = () => {
         {activeTab === 'gov' && <GovernanceAlerts />}
       </section>
 
-      <PhaseTransitionModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onConfirm={handleConfirmTransition}
-        projectType={selectedProject.type}
-        currentPhase={currentPhaseName}
-      />
+      {isModalOpen && (
+        <PhaseTransitionModal 
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onConfirm={handleConfirmTransition}
+          projectType={selectedProject.type}
+          currentPhase={currentPhaseName}
+        />
+      )}
     </div>
   );
 };

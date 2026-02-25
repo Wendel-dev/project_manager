@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import { PHASES } from '../module/Project';
 import FileUpload from './FileUpload';
@@ -26,6 +26,15 @@ const PhaseTransitionModal: React.FC<PhaseTransitionModalProps> = ({
   const [manualPhase, setManualPhase] = useState('');
   const [parsedData, setParsedData] = useState<ParsedPhase | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMode('choice');
+      setManualPhase('');
+      setParsedData(null);
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

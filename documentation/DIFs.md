@@ -25,25 +25,12 @@ Este documento detalha as discrepâncias encontradas entre o documento de especi
 *   **Implementação**: **Não implementado**. A transição de fase apenas atualiza o status do projeto. Não há verificação de tarefas pendentes nem isolamento de contexto.
     *   *Arquivos relacionados*: `src/application/TransitionPhaseUseCase.ts`, `src/components/PhaseTransitionModal.tsx`
 
-### 4.3. Histórico Colapsável
-*   **Especificação**: Organização visual onde tarefas de fases passadas ficam arquivadas, mas acessíveis, para reduzir o ruído visual.
-*   **Implementação**: **Não implementado**. As tarefas não possuem vínculo com fases específicas no banco de dados, e o Kanban exibe todas as tarefas do projeto independentemente da fase atual.
-    *   *Arquivos relacionados*: `src/db.ts` (esquema da tabela `tasks`), `src/components/KanbanBoard.tsx`
-
 ---
 
 ## Resumo de Status
 
 | Funcionalidade | Status | Observação |
 | :--- | :--- | :--- |
-| Multi-Projetos | ✅ Implementado | |
 | Algoritmo Next Step | ⚠️ Parcial | Lógica de priorização diverge da especificação. |
 | Monitor de Inércia | ⚠️ Parcial | Threshold configurado para teste (10s). |
-| Elementos GDD Atômicos | ✅ Implementado | |
-| Versionamento de GDD | ✅ Implementado | |
-| Exportador Markdown | ❌ Não Implementado | |
-| Vínculo de Versão (Cards) | ✅ Implementado | |
-| Alerta de Obsolescência | ✅ Implementado | |
-| Régua de Fases | ⚠️ Parcial | Nomenclatura diferente. |
 | Soft-Gate de Pendências | ❌ Não Implementado | |
-| Histórico Colapsável | ❌ Não Implementado | Requer alteração no esquema do banco de dados. |
