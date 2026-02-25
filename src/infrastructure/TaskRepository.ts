@@ -45,11 +45,11 @@ export class TaskRepository implements ITaskRepository {
   async getAreaStats(userId: string, projectId: number): Promise<{ area: string, todo_count: number, done_count: number }[]> {
     return db.query(`
       SELECT area, 
-             COUNT(CASE WHEN status = 'todo' THEN 1 END) as todo_count,
+             COUNT(CASE WHEN status = 'todo' OR status = 'doing' THEN 1 END) as todo_count,
              COUNT(CASE WHEN status = 'done' THEN 1 END) as done_count
       FROM tasks
       WHERE project_id = ? AND user_id = ?
-      GROUP BY area
+      GROUP BY area, phase_id
     `).all(projectId, userId) as { area: string, todo_count: number, done_count: number }[];
   }
 
