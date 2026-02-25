@@ -1,2 +1,15 @@
+configurar stripe
+configurar supabase
+configurar mysql
+
 criar configuração por codigo
 empacotar serviço
+
+atualmente, na modal de nova etapa sem documento, a sugestão de nome para a eta é escrita no componente input, a intenção era que a sugestão fosse feita em um select, onde o usuário poderia escolher um nome prédefinido para aquele tipo de projeto ou escrever um nome personalizado para a etapa.
+incluir a possibilidade de incluir um documento para adicionar tarefas sem adicionar uma nova fase.
+download de arquivos de guia para fases e documentação
+modal para criar projeto.
+incluir grupo projetos Sites
+
+incluir função de usar IA para criar modelo de documento para documentação e fases
+incluir possibilidade de adicionar APIKey e salvar no navegador.
