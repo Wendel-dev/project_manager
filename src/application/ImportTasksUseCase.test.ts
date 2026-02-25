@@ -19,8 +19,14 @@ describe("ImportTasksUseCase", () => {
       getInertiaTasks: mock(),
       getOutdatedTasks: mock()
     };
+    const phaseRepoMock = {
+      create: mock(async () => ({ id: 10 })),
+      findByProjectId: mock(async () => []),
+      delete: mock(),
+      createBatch: mock()
+    };
 
-    const useCase = new ImportTasksUseCase(projectRepoMock as any, taskRepoMock as any);
+    const useCase = new ImportTasksUseCase(projectRepoMock as any, taskRepoMock as any, phaseRepoMock as any);
     
     const parsedProject: ParsedPhase = {
       name: "Fase Importada",

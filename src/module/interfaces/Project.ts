@@ -5,6 +5,7 @@ export interface ProjectData {
   user_id: string;
   name: string;
   type: ProjectType;
-  current_phase: string;
+  current_phase_id: number;
+  current_phase?: string; // Kept for legacy support during transition if needed
   created_at: string;
 }

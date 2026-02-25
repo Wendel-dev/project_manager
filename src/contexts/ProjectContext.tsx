@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from "
 import type { ReactNode } from "react";
 import { ProjectRepositoryAPI } from "../infrastructure/ProjectRepositoryAPI";
 import type { ProjectData, ProjectType } from "../module/interfaces/Project";
+import type { PhaseData } from "../module/interfaces/Phase";
 import type { ChecklistItem } from "../module/interfaces/Task";
 import type { ParsedPhase } from "../module/interfaces/ParsedProject";
 import type { DocElementData, ParsedDocSection } from "../module/interfaces/Doc";
@@ -10,10 +11,12 @@ import { ExportDocUseCase } from "../application/ExportDocUseCase";
 import type { DocTreeNode } from "../application/GetDocTreeUseCase";
 
 export type Project = ProjectData;
+export type Phase = PhaseData;
 
 export interface Task {
   id: number;
   project_id: number;
+  phase_id: number | null;
   title: string;
   description: string | null;
   area: string;
@@ -33,20 +36,22 @@ interface ProjectContextType {
   projects: Project[];
   selectedProject: Project | null;
   tasks: Task[];
+  phases: Phase[];
   docs: DocElement[];
   selectProject: (id: number) => void;
   addProject: (name: string, type: ProjectType, initialPhaseName?: string, tasks?: ParsedPhase['tasks']) => Promise<void>;
   fetchProjects: () => Promise<void>;
-  addTask: (title: string, area: string, description?: string, doc_element_version_id?: number|null) => Promise<void>;
+  addTask: (title: string, area: string, description?: string, doc_element_version_id?: number|null, phase_id?: number|null) => Promise<void>;
   updateTask: (id: number, updates: Partial<Task>) => Promise<void>;
   deleteTask: (id: number) => Promise<void>;
   addDoc: (title: string, content: string, element_id?: number, parent_id?: number | null) => Promise<void>;
   fetchDocs: (projectId: number) => Promise<void>;
+  fetchPhases: (projectId: number) => Promise<void>;
   parseDocument: (file: File) => Promise<ParsedPhase>;
   parseDocHierarchy: (file: File) => Promise<ParsedDocSection[]>;
   importDocHierarchy: (sections: ParsedDocSection[]) => Promise<void>;
   importProject: (parsedProject: ParsedPhase) => Promise<void>;
-  transitionPhase: (projectId: number, nextPhaseName: string, tasks?: ParsedPhase['tasks']) => Promise<void>;
+  createPhase: (projectId: number, phaseName: string, tasks?: ParsedPhase['tasks']) => Promise<void>;
   deleteProject: (id: number) => Promise<void>;
   exportProjectDocs: () => Promise<void>;
 }
@@ -57,6 +62,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [phases, setPhases] = useState<Phase[]>([]);
   const [docs, setDocs] = useState<DocElement[]>([]);
   const { user, token } = useAuth();
 
@@ -92,6 +98,20 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
+  const fetchPhases = async (projectId: number) => {
+    if (!token) return;
+    try {
+      const response = await fetch(`/api/projects/${projectId}/phases`, {
+        headers: getHeaders()
+      });
+      const data = await response.json();
+      setPhases(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching phases:", error);
+      setPhases([]);
+    }
+  };
+
   const fetchDocs = async (projectId: number) => {
     if (!token) return;
     try {
@@ -111,6 +131,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (project) {
       setSelectedProject(project);
       fetchTasks(project.id);
+      fetchPhases(project.id);
       fetchDocs(project.id);
     }
   };
@@ -131,13 +152,13 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const transitionPhase = async (projectId: number, nextPhaseName: string, tasks?: ParsedPhase['tasks']) => {
+  const createPhase = async (projectId: number, phaseName: string, tasks?: ParsedPhase['tasks']) => {
     if (!token) return;
     try {
-      const response = await fetch(`/api/projects/${projectId}/transition`, {
+      const response = await fetch(`/api/projects/${projectId}/phases`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ nextPhaseName, tasks }),
+        body: JSON.stringify({ phaseName, tasks }),
       });
       if (response.ok) {
         await fetchProjects();
@@ -147,12 +168,13 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
           const updated = updatedProjects.find(p => p.id === projectId);
           if (updated) {
             setSelectedProject(updated);
+            await fetchPhases(projectId);
             await fetchTasks(projectId);
           }
         }
       }
     } catch (error) {
-      console.error("Error transitioning phase:", error);
+      console.error("Error creating phase:", error);
       throw error;
     }
   };
@@ -168,6 +190,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         if (selectedProject?.id === id) {
           setSelectedProject(null);
           setTasks([]);
+          setPhases([]);
           setDocs([]);
         }
         await fetchProjects();
@@ -199,13 +222,13 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     URL.revokeObjectURL(url);
   };
 
-  const addTask = async (title: string, area: string, description?: string, doc_element_version_id?: number|null) => {
+  const addTask = async (title: string, area: string, description?: string, doc_element_version_id?: number|null, phase_id?: number|null) => {
     if (!selectedProject || !token) return;
     try {
       const response = await fetch(`/api/projects/${selectedProject.id}/tasks`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ title, area, description, doc_element_version_id }),
+        body: JSON.stringify({ title, area, description, doc_element_version_id, phase_id }),
       });
       if (response.ok) {
         await fetchTasks(selectedProject.id);
@@ -363,6 +386,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       projects, 
       selectedProject, 
       tasks, 
+      phases,
       docs,
       selectProject, 
       addProject, 
@@ -372,11 +396,12 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       deleteTask,
       addDoc,
       fetchDocs,
+      fetchPhases,
       parseDocument,
       parseDocHierarchy,
       importDocHierarchy,
       importProject,
-      transitionPhase,
+      createPhase,
       deleteProject,
       exportProjectDocs
     }}>
@@ -384,6 +409,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     </ProjectContext.Provider>
   );
 };
+
 
 export const useProject = () => {
   const context = useContext(ProjectContext);

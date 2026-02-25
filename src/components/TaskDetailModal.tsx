@@ -15,7 +15,7 @@ const AREAS = {
 };
 
 const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, onClose }) => {
-  const { selectedProject, updateTask, deleteTask } = useProject();
+  const { selectedProject, updateTask, deleteTask, phases } = useProject();
   const [editedTask, setEditedTask] = useState<Task>({ ...task });
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -37,6 +37,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, onClose
         description: editedTask.description,
         area: editedTask.area,
         status: editedTask.status,
+        phase_id: editedTask.phase_id,
         target_date: editedTask.target_date,
         checklists: editedTask.checklists,
       });
@@ -143,6 +144,15 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, onClose
               <option value="todo">To Do</option>
               <option value="doing">Doing</option>
               <option value="done">Done</option>
+            </select>
+            <select 
+              value={editedTask.phase_id || ''}
+              onChange={e => setEditedTask({ ...editedTask, phase_id: e.target.value ? Number(e.target.value) : null })}
+            >
+              <option value="">Sem Fase</option>
+              {phases.map(phase => (
+                <option key={phase.id} value={phase.id}>{phase.name}</option>
+              ))}
             </select>
           </div>
         </div>

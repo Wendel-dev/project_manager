@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useProject } from '../contexts/ProjectContext';
-import type { Task } from '../contexts/ProjectContext';
+import type { Task, Phase } from '../contexts/ProjectContext';
 import TaskDetailModal from './TaskDetailModal';
 
 const AREAS = {
@@ -9,13 +9,30 @@ const AREAS = {
 };
 
 const KanbanBoard: React.FC = () => {
-  const { selectedProject, tasks, docs, addTask, updateTask } = useProject();
+  const { selectedProject, tasks, phases, docs, addTask, updateTask } = useProject();
+  const [selectedPhaseId, setSelectedPhaseId] = useState<number | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskArea, setNewTaskArea] = useState('');
   const [newTaskDocId, setNewTaskDocId] = useState<number | ''>('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedTaskForModal, setSelectedTaskForModal] = useState<Task | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  // Default to the project's current phase when selectedProject changes or phases are loaded
+  useEffect(() => {
+    if (selectedProject && phases.length > 0) {
+      if (selectedProject.current_phase_id) {
+        setSelectedPhaseId(selectedProject.current_phase_id);
+      } else if (!selectedPhaseId) {
+        setSelectedPhaseId(phases[0]?.id||null);
+      }
+    }
+  }, [selectedProject, phases]);
+
+  const filteredTasks = useMemo(() => {
+    if (!selectedPhaseId) return tasks;
+    return tasks.filter(t => t.phase_id === selectedPhaseId);
+  }, [tasks, selectedPhaseId]);
 
   const groupedTasks = useMemo(() => {
     const groups: Record<string, Record<string, Task[]>> = {
@@ -24,7 +41,7 @@ const KanbanBoard: React.FC = () => {
       done: {}
     };
 
-    const taskList = Array.isArray(tasks) ? tasks : [];
+    const taskList = Array.isArray(filteredTasks) ? filteredTasks : [];
     taskList.forEach(task => {
       let group = groups[task.status];
       if (group) {
@@ -36,7 +53,7 @@ const KanbanBoard: React.FC = () => {
     });
 
     return groups;
-  }, [tasks]);
+  }, [filteredTasks]);
 
   if (!selectedProject) return null;
 
@@ -46,7 +63,7 @@ const KanbanBoard: React.FC = () => {
     e.preventDefault();
     if (newTaskTitle && newTaskArea) {
       const doc = docs.find(d => d.id === newTaskDocId);
-      await addTask(newTaskTitle, newTaskArea, '', doc?.current_version_id);
+      await addTask(newTaskTitle, newTaskArea, '', doc?.current_version_id, selectedPhaseId);
       setNewTaskTitle('');
       setNewTaskArea('');
       setNewTaskDocId('');
@@ -76,7 +93,23 @@ const KanbanBoard: React.FC = () => {
   return (
     <div className="kanban">
       <div className="kanban-header">
-        <h2>Kanban</h2>
+        <div className="kanban-title-section">
+          <h2>Kanban</h2>
+          <div className="phase-selector">
+            <label htmlFor="phase-select">Fase:</label>
+            <select 
+              id="phase-select"
+              value={selectedPhaseId || ''} 
+              onChange={(e) => setSelectedPhaseId(Number(e.target.value))}
+            >
+              {phases.map(phase => (
+                <option key={phase.id} value={phase.id}>
+                  {phase.name} {phase.id === selectedProject.current_phase_id ? '(Atual)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <button className="add-task-btn" onClick={() => setShowAddForm(!showAddForm)}>
           {showAddForm ? 'Cancelar' : '+ Nova Tarefa'}
         </button>

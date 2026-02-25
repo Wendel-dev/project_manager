@@ -11,6 +11,7 @@ export interface TaskData {
   description: string | null;
   area: string;
   status: 'todo' | 'doing' | 'done';
+  phase_id: number | null;
   target_date?: string | null;
   checklists?: string | null;
   doc_element_version_id: number | null;

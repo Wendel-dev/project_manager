@@ -27,7 +27,7 @@ export class ProjectRepositoryAPI implements IProjectRepository {
     return response.json();
   }
 
-  async create(userId: string, name: string, type: ProjectType, initialPhase: string): Promise<ProjectData> {
+  async create(userId: string, name: string, type: ProjectType, initialPhaseId: number): Promise<ProjectData> {
     const response = await fetch("/api/projects", {
       method: "POST",
       headers: this.getHeaders(),

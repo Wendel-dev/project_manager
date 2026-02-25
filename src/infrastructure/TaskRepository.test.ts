@@ -6,12 +6,18 @@ describe("TaskRepository Integration", () => {
   const taskRepo = new TaskRepository();
 
   beforeAll(() => {
+    // Cleanup first just in case
+    db.query("DELETE FROM phases WHERE id = 999").run();
+    db.query("DELETE FROM projects WHERE id = 999").run();
+
     // Setup test data
-    db.query("INSERT INTO projects (id, user_id, name, type, current_phase) VALUES (999, 'user-test', 'Test Project', 'jogo', 'Concepção')").run();
+    db.query("INSERT INTO projects (id, user_id, name, type, current_phase_id, current_phase) VALUES (999, 'user-test', 'Test Project', 'jogo', 999, 'LEGACY')").run();
+    db.query("INSERT INTO phases (id, user_id, project_id, name, order_index) VALUES (999, 'user-test', 999, 'Concepção', 0)").run();
   });
 
   afterAll(() => {
     // Cleanup test data
+    db.query("DELETE FROM phases WHERE project_id = 999").run();
     db.query("DELETE FROM tasks WHERE project_id = 999").run();
     db.query("DELETE FROM projects WHERE id = 999").run();
   });

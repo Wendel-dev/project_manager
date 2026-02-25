@@ -11,17 +11,17 @@ export class ProjectRepository implements IProjectRepository {
     return db.query("SELECT * FROM projects WHERE id = ? AND user_id = ?").get(id, userId) as ProjectData | null;
   }
 
-  async create(userId: string, name: string, type: ProjectType, initialPhase: string): Promise<ProjectData> {
+  async create(userId: string, name: string, type: ProjectType, initialPhaseId: number): Promise<ProjectData> {
     const result = db.query(
-      "INSERT INTO projects (user_id, name, type, current_phase) VALUES (?, ?, ?, ?) RETURNING id"
-    ).get(userId, name, type, initialPhase) as { id: number };
+      "INSERT INTO projects (user_id, name, type, current_phase_id, current_phase) VALUES (?, ?, ?, ?, ?) RETURNING id"
+    ).get(userId, name, type, initialPhaseId, 'LEGACY') as { id: number };
 
     return {
       id: result.id,
       user_id: userId,
       name,
       type,
-      current_phase: initialPhase,
+      current_phase_id: initialPhaseId,
       created_at: new Date().toISOString()
     };
   }
@@ -50,6 +50,9 @@ export class ProjectRepository implements IProjectRepository {
 
     // 3. tasks
     db.query("DELETE FROM tasks WHERE project_id = ? AND user_id = ?").run(id, userId);
+
+    // 3.5. phases
+    db.query("DELETE FROM phases WHERE project_id = ? AND user_id = ?").run(id, userId);
 
     // 4. projects
     db.query("DELETE FROM projects WHERE id = ? AND user_id = ?").run(id, userId);

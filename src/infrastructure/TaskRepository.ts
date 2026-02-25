@@ -13,10 +13,11 @@ export class TaskRepository implements ITaskRepository {
 
   async create(userId: string, task: Omit<TaskData, 'id' | 'created_at' | 'updated_at' | 'user_id'>): Promise<number> {
     const result = db.query(
-      "INSERT INTO tasks (user_id, project_id, title, description, area, status, target_date, checklists, doc_element_version_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"
+      "INSERT INTO tasks (user_id, project_id, phase_id, title, description, area, status, target_date, checklists, doc_element_version_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"
     ).get(
       userId,
       task.project_id, 
+      task.phase_id || null,
       task.title, 
       task.description || null, 
       task.area, 

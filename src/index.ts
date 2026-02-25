@@ -3,6 +3,7 @@ import index from "./index.html";
 import { ProjectRepository } from "./infrastructure/ProjectRepository";
 import { TaskRepository } from "./infrastructure/TaskRepository";
 import { DocRepository } from "./infrastructure/DocRepository";
+import { PhaseRepository } from "./infrastructure/PhaseRepository";
 import { AddProjectUseCase } from "./application/AddProjectUseCase";
 import { UpdateProjectUseCase } from "./application/UpdateProjectUseCase";
 import { DeleteProjectUseCase } from "./application/DeleteProjectUseCase";
@@ -14,7 +15,7 @@ import { SaveDocUseCase } from "./application/SaveDocUseCase";
 import { GetGovernanceUseCase } from "./application/GetGovernanceUseCase";
 import { ParseDocumentUseCase } from "./application/ParseDocumentUseCase";
 import { ImportTasksUseCase } from "./application/ImportTasksUseCase";
-import { TransitionPhaseUseCase } from "./application/TransitionPhaseUseCase";
+import { CreatePhaseUseCase } from "./application/CreatePhaseUseCase";
 import { ParseDocDocumentUseCase } from "./application/ParseDocDocumentUseCase";
 import { ImportDocUseCase } from "./application/ImportDocUseCase";
 import { GetDocTreeUseCase } from "./application/GetDocTreeUseCase";
@@ -26,8 +27,9 @@ import { authenticate } from "./middleware/authMiddleware";
 const projectRepo = new ProjectRepository();
 const taskRepo = new TaskRepository();
 const docRepo = new DocRepository();
+const phaseRepo = new PhaseRepository();
 
-const addProjectUseCase = new AddProjectUseCase(projectRepo, taskRepo);
+const addProjectUseCase = new AddProjectUseCase(projectRepo, taskRepo, phaseRepo);
 const updateProjectUseCase = new UpdateProjectUseCase(projectRepo);
 const deleteProjectUseCase = new DeleteProjectUseCase(projectRepo);
 const getTasksUseCase = new GetTasksUseCase(taskRepo);
@@ -38,8 +40,8 @@ const getDocTreeUseCase = new GetDocTreeUseCase(docRepo);
 const saveDocUseCase = new SaveDocUseCase(docRepo);
 const getGovernanceUseCase = new GetGovernanceUseCase(taskRepo);
 const parseDocumentUseCase = new ParseDocumentUseCase();
-const importTasksUseCase = new ImportTasksUseCase(projectRepo, taskRepo);
-const transitionPhaseUseCase = new TransitionPhaseUseCase(projectRepo, taskRepo);
+const importTasksUseCase = new ImportTasksUseCase(projectRepo, taskRepo, phaseRepo);
+const createPhaseUseCase = new CreatePhaseUseCase(projectRepo, taskRepo, phaseRepo);
 
 const docParsers = [
   new DocMarkdownParser(),
@@ -79,6 +81,24 @@ const server = serve({
           const { name, type, initialPhaseName, tasks } = await req.json();
           const result = await addProjectUseCase.execute(userId, name, type, initialPhaseName, tasks);
           return Response.json(result, { status: 201 });
+        });
+      },
+    },
+
+    "/api/projects/:id/phases": {
+      async GET(req) {
+        return handleProtected(req, async (userId) => {
+          const id = parseInt(req.params.id);
+          const phases = await phaseRepo.findByProjectId(userId, id);
+          return Response.json(phases);
+        });
+      },
+      async POST(req) {
+        return handleProtected(req, async (userId) => {
+          const projectId = parseInt(req.params.id);
+          const { phaseName, tasks } = await req.json();
+          await createPhaseUseCase.execute(userId, projectId, phaseName, tasks);
+          return Response.json({ success: true });
         });
       },
     },
@@ -138,17 +158,6 @@ const server = serve({
         return handleProtected(req, async (userId) => {
           const id = parseInt(req.params.id);
           await deleteProjectUseCase.execute(userId, id);
-          return Response.json({ success: true });
-        });
-      },
-    },
-
-    "/api/projects/:id/transition": {
-      async POST(req) {
-        return handleProtected(req, async (userId) => {
-          const projectId = parseInt(req.params.id);
-          const { nextPhaseName, tasks } = await req.json();
-          await transitionPhaseUseCase.execute(userId, projectId, nextPhaseName, tasks);
           return Response.json({ success: true });
         });
       },

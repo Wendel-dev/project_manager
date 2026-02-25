@@ -7,7 +7,7 @@ import PhaseTransitionModal from './PhaseTransitionModal';
 import { ProjectModule } from '../module/Project';
 
 const ProjectDashboard: React.FC = () => {
-  const { selectedProject, tasks, transitionPhase, deleteProject, exportProjectDocs, docs } = useProject();
+  const { selectedProject, tasks, phases, createPhase, deleteProject, exportProjectDocs, docs } = useProject();
   const [activeTab, setActiveTab] = useState<'kanban' | 'docs' | 'gov'>('kanban');
   const [phaseError, setPhaseError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,6 +20,9 @@ const ProjectDashboard: React.FC = () => {
     );
   }
 
+  const currentPhaseData = phases.find(p => p.id === selectedProject.current_phase_id);
+  const currentPhaseName = currentPhaseData ? currentPhaseData.name : (selectedProject.current_phase || 'Início');
+
   const handleDeleteProject = async () => {
     if (window.confirm(`Tem certeza que deseja excluir o projeto "${selectedProject.name}"? Esta ação não pode ser desfeita.`)) {
       try {
@@ -31,7 +34,7 @@ const ProjectDashboard: React.FC = () => {
   };
 
   const projectPhases = ProjectModule.getPhases(selectedProject.type);
-  const currentPhaseIndex = projectPhases.indexOf(selectedProject.current_phase);
+  const currentPhaseIndex = projectPhases.indexOf(currentPhaseName);
 
   const handleNextPhaseClick = () => {
     // Soft-Gate: Check for unfinished tasks
@@ -48,10 +51,10 @@ const ProjectDashboard: React.FC = () => {
 
   const handleConfirmTransition = async (phaseName: string, tasks?: any[]) => {
     try {
-      await transitionPhase(selectedProject.id, phaseName, tasks);
+      await createPhase(selectedProject.id, phaseName, tasks);
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error in transition:", error);
+      console.error("Error in phase creation:", error);
     }
   };
 
@@ -75,7 +78,7 @@ const ProjectDashboard: React.FC = () => {
             </div>
           </div>
           <div className="phase-progression">
-            <span>Fase: <strong>{selectedProject.current_phase}</strong></span>
+            <span>Fase: <strong>{currentPhaseName}</strong></span>
             <button className="next-phase-btn" onClick={handleNextPhaseClick}>Próxima Fase</button>
           </div>
         </div>
@@ -117,7 +120,7 @@ const ProjectDashboard: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfirmTransition}
         projectType={selectedProject.type}
-        currentPhase={selectedProject.current_phase}
+        currentPhase={currentPhaseName}
       />
     </div>
   );
