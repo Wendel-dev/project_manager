@@ -1,2 +1,3 @@
+ao mover uma parefa para fazendo(doing) a pagina de governança retorna que a area não posui tarefas para realizar, ao deixar uma ou mais tarefas em a fazer(todo) o projeto erra o calculo e mostra por exemplo que uma area que possui 2 tarefas, ambas em todo, teria 2 tarefas a realizar e 2 tarefas concluidas, ou um projeto com 1 tarefa em todo e 1 tarefa em done mostra que teria 1 tarefa para concluir e 3 concluidas.
 criar configuração por codigo
 empacotar serviço

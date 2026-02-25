@@ -3,7 +3,12 @@ import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
 
 interface GovernanceData {
-  nextStep?: { area: string, todo_count: number, done_count: number };
+  nextStep?: { 
+    area: string; 
+    todo_count: number; 
+    done_count: number;
+    task?: { title: string };
+  };
   stalledTasks: { id: number, title: string }[];
   outdatedTasks: { id: number, title: string, doc_title: string }[];
 }
@@ -43,6 +48,9 @@ const GovernanceAlerts: React.FC = () => {
         {govData.nextStep ? (
           <div className="next-step-card">
             <p>Foque em: <strong>{govData.nextStep.area}</strong></p>
+            {govData.nextStep.task && (
+              <p>Próxima Tarefa: <strong>{govData.nextStep.task.title}</strong></p>
+            )}
             <span>{govData.nextStep.todo_count} tarefas pendentes vs {govData.nextStep.done_count} concluídas</span>
           </div>
         ) : (

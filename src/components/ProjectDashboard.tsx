@@ -9,7 +9,6 @@ import { ProjectModule } from '../module/Project';
 const ProjectDashboard: React.FC = () => {
   const { selectedProject, tasks, phases, createPhase, deleteProject, exportProjectDocs, docs } = useProject();
   const [activeTab, setActiveTab] = useState<'kanban' | 'docs' | 'gov'>('kanban');
-  const [phaseError, setPhaseError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (!selectedProject) {
@@ -37,13 +36,13 @@ const ProjectDashboard: React.FC = () => {
   const currentPhaseIndex = projectPhases.indexOf(currentPhaseName);
 
   const handleNextPhaseClick = () => {
-    // Soft-Gate: Check for unfinished tasks
     const unfinishedTasks = tasks.filter(t => t.status !== 'done').length;
     
     if (unfinishedTasks > 0) {
-      setPhaseError(`Não é possível avançar: Existem ${unfinishedTasks} tarefas pendentes.`);
-      setTimeout(() => setPhaseError(null), 3000);
-      return;
+      const confirmProceed = window.confirm(
+        `Existem ${unfinishedTasks} tarefas pendentes na fase atual. Deseja prosseguir para a próxima fase mesmo assim?`
+      );
+      if (!confirmProceed) return;
     }
 
     setIsModalOpen(true);
@@ -82,7 +81,6 @@ const ProjectDashboard: React.FC = () => {
             <button className="next-phase-btn" onClick={handleNextPhaseClick}>Próxima Fase</button>
           </div>
         </div>
-        {phaseError && <div className="phase-error">{phaseError}</div>}
         <div className="project-meta">
           <p><strong>Tipo:</strong> {selectedProject.type}</p>
         </div>
