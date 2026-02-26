@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
-import { ProjectModule } from '../module/Project';
-import type { ProjectType } from '../module/interfaces/Project';
-import type { ParsedPhase } from '../module/interfaces/ParsedProject';
+import { ProjectModule } from '../../Main/module/Project';
+import type { ProjectType } from '../../Main/module/interfaces/Project';
+import type { ParsedPhase } from '../../Main/module/interfaces/ParsedProject';
 import FileUpload from './FileUpload';
 import ImportPreview from './ImportPreview';
 

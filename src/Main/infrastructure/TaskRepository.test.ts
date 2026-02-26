@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import db from "../db";
+import db from "../../db";
 import { TaskRepository } from "./TaskRepository";
 
 describe("TaskRepository Integration", () => {

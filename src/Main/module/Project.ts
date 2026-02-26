@@ -1,4 +1,4 @@
-import type { ProjectType } from "@/module/interfaces/Project";
+import type { ProjectType } from "@/Main/module/interfaces/Project";
 
 export const PHASES: Record<ProjectType, string[]> = {
   jogo: ['Conceito', 'Protótipo', 'Alpha', 'Beta', 'Gold','Pós-lançamento'],

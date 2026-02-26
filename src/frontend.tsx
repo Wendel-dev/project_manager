@@ -7,8 +7,8 @@
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { App } from "./App";
-import { AuthProvider } from "./contexts/AuthContext";
+import { App } from "./UI/App";
+import { AuthProvider } from "./UI/contexts/AuthContext";
 
 const elem = document.getElementById("root")!;
 const app = (

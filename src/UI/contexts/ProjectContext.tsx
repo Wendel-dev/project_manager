@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
-import { ProjectRepositoryAPI } from "../infrastructure/ProjectRepositoryAPI";
-import type { ProjectData, ProjectType } from "../module/interfaces/Project";
-import type { PhaseData } from "../module/interfaces/Phase";
-import type { ChecklistItem } from "../module/interfaces/Task";
-import type { ParsedPhase } from "../module/interfaces/ParsedProject";
-import type { DocElementData, ParsedDocSection } from "../module/interfaces/Doc";
+import { ProjectRepositoryAPI } from "../../Main/infrastructure/ProjectRepositoryAPI";
+import type { ProjectData, ProjectType } from "../../Main/module/interfaces/Project";
+import type { PhaseData } from "../../Main/module/interfaces/Phase";
+import type { ChecklistItem } from "../../Main/module/interfaces/Task";
+import type { ParsedPhase } from "../../Main/module/interfaces/ParsedProject";
+import type { DocElementData, ParsedDocSection } from "../../Main/module/interfaces/Doc";
 import { useAuth } from "./AuthContext";
-import { ExportDocUseCase } from "../application/ExportDocUseCase";
-import type { DocTreeNode } from "../application/GetDocTreeUseCase";
+import { ExportDocUseCase } from "../../Main/application/ExportDocUseCase";
+import type { DocTreeNode } from "../../Main/application/GetDocTreeUseCase";
 
 export type Project = ProjectData;
 export type Phase = PhaseData;

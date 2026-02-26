@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { AuthRepositoryMock as AuthRepository } from "../infrastructure/AuthRepositoryMock";
+import { AuthRepositoryMock as AuthRepository } from "../../Main/infrastructure/AuthRepositoryMock";
 
 interface User {
   id: string;

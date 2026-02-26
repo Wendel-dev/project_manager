@@ -1,4 +1,4 @@
-import db from "../db";
+import db from "../../db";
 import { PhaseData } from "../module/interfaces/Phase";
 import { IPhaseRepository } from "../application/interfaces/IPhaseRepository";
 

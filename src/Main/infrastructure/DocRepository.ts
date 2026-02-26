@@ -1,4 +1,4 @@
-import db from "../db";
+import db from "../../db";
 import type { DocElementData } from "../module/interfaces/Doc";
 import type { IDocRepository } from "../application/interfaces/IDocRepository";
 

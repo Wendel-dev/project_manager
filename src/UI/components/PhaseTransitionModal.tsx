@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useProject } from '../contexts/ProjectContext';
-import { PHASES } from '../module/Project';
+import { PHASES } from '../../Main/module/Project';
 import FileUpload from './FileUpload';
 import ImportPreview from './ImportPreview';
-import type { ParsedPhase } from '../module/interfaces/ParsedProject';
-import type { ProjectType } from '../module/interfaces/Project';
+import type { ParsedPhase } from '../../Main/module/interfaces/ParsedProject';
+import type { ProjectType } from '../../Main/module/interfaces/Project';
 
 interface PhaseTransitionModalProps {
   isOpen: boolean;

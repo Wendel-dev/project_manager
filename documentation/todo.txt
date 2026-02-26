@@ -1,5 +1,5 @@
 configurar stripe
-configurar supabase
+configurar firebase
 configurar mysql
 
 criar configuração por codigo

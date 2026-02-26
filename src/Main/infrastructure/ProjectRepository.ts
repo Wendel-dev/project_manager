@@ -1,4 +1,4 @@
-import db from "../db";
+import db from "../../db";
 import type { ProjectData, ProjectType } from "../module/interfaces/Project";
 import type { IProjectRepository } from "../application/interfaces/IProjectRepository";
 

@@ -1,4 +1,4 @@
-import db from "../db";
+import db from "../../db";
 import type { TaskData } from "../module/interfaces/Task";
 import type { ITaskRepository } from "../application/interfaces/ITaskRepository";
 

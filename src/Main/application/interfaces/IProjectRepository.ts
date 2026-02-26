@@ -1,4 +1,4 @@
-import type { ProjectData, ProjectType } from "@/module/interfaces/Project";
+import type { ProjectData, ProjectType } from "@/Main/module/interfaces/Project";
 
 export interface IProjectRepository {
   create(userId: string, name: string, type: ProjectType, initialPhaseId: number): Promise<ProjectData>;
