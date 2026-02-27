@@ -22,7 +22,7 @@ import { GetDocTreeUseCase } from "./Project/application/GetDocTreeUseCase";
 import { DocMarkdownParser } from "./Project/infrastructure/parsers/DocMarkdownParser";
 import { DocTextParser } from "./Project/infrastructure/parsers/DocTextParser";
 import { DocPDFParser } from "./Project/infrastructure/parsers/DocPDFParser";
-import { authenticate } from "./Auth/middleware/authMiddleware";
+import { authenticate } from "./Auth/infrastructure/authMiddleware";
 
 const projectRepo = new ProjectRepository();
 const taskRepo = new TaskRepository();
