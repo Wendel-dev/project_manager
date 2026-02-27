@@ -11,6 +11,10 @@ export async function authenticate(req: Request): Promise<string | null> {
 
   const token = authHeader.split(" ")[1];
 
+  if (!token) {
+    return null;
+  }
+
   // Mock token support for testing without Supabase
   if (token.startsWith("mock-token-")) {
     return token.replace("mock-token-", "");
