@@ -3,10 +3,8 @@ import type { IProjectRepository } from "../application/interfaces/IProjectRepos
 
 export class ProjectRepositoryAPI implements IProjectRepository {
   private getHeaders() {
-    const token = localStorage.getItem("indieflow-auth-token");
     return {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`
+      "Content-Type": "application/json"
     };
   }
 

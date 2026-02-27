@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { ParsedPhase, ParsedTask } from '../../Main/module/interfaces/ParsedProject';
+import type { ParsedPhase, ParsedTask } from '../../Project/module/interfaces/ParsedProject';
 
 interface ImportPreviewProps {
   parsedProject: ParsedPhase;
@@ -18,8 +18,10 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({
 
   const handleTaskChange = (index: number, field: keyof ParsedTask, value: any) => {
     const newTasks = [...project.tasks];
-    newTasks[index] = { ...newTasks[index], [field]: value };
-    setProject({ ...project, tasks: newTasks });
+    if(newTasks[index]) {
+      newTasks[index] = { ...newTasks[index], [field]: value };
+      setProject({ ...project, tasks: newTasks });
+    }
   };
 
   return (

@@ -1,14 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
-import { ProjectRepositoryAPI } from "../../Main/infrastructure/ProjectRepositoryAPI";
-import type { ProjectData, ProjectType } from "../../Main/module/interfaces/Project";
-import type { PhaseData } from "../../Main/module/interfaces/Phase";
-import type { ChecklistItem } from "../../Main/module/interfaces/Task";
-import type { ParsedPhase } from "../../Main/module/interfaces/ParsedProject";
-import type { DocElementData, ParsedDocSection } from "../../Main/module/interfaces/Doc";
+import { ProjectRepositoryAPI } from "../../Project/infrastructure/ProjectRepositoryAPI";
+import type { ProjectData, ProjectType } from "../../Project/module/interfaces/Project";
+import type { PhaseData } from "../../Project/module/interfaces/Phase";
+import type { ParsedPhase } from "../../Project/module/interfaces/ParsedProject";
+import type { DocElementData, ParsedDocSection } from "../../Project/module/interfaces/Doc";
 import { useAuth } from "./AuthContext";
-import { ExportDocUseCase } from "../../Main/application/ExportDocUseCase";
-import type { DocTreeNode } from "../../Main/application/GetDocTreeUseCase";
+import { ExportDocUseCase } from "../../Project/application/ExportDocUseCase";
+import type { DocTreeNode } from "../../Project/application/GetDocTreeUseCase";
 
 export type Project = ProjectData;
 export type Phase = PhaseData;
@@ -64,14 +63,13 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [tasks, setTasks] = useState<Task[]>([]);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [docs, setDocs] = useState<DocElement[]>([]);
-  const { user, token } = useAuth();
+  const { user } = useAuth();
 
   // Instantiate Repository and UseCase for the frontend
   const projectRepository = useMemo(() => new ProjectRepositoryAPI(), []);
 
   const getHeaders = () => ({
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${token}`
+    "Content-Type": "application/json"
   });
 
   const fetchProjects = async () => {
@@ -85,7 +83,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const fetchTasks = async (projectId: number) => {
-    if (!token) return;
+    if (!user) return;
     try {
       const response = await fetch(`/api/projects/${projectId}/tasks`, {
         headers: getHeaders()
@@ -99,7 +97,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const fetchPhases = async (projectId: number) => {
-    if (!token) return;
+    if (!user) return;
     try {
       const response = await fetch(`/api/projects/${projectId}/phases`, {
         headers: getHeaders()
@@ -113,7 +111,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const fetchDocs = async (projectId: number) => {
-    if (!token) return;
+    if (!user) return;
     try {
       const response = await fetch(`/api/projects/${projectId}/docs`, {
         headers: getHeaders()
@@ -153,7 +151,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const createPhase = async (projectId: number, phaseName: string, tasks?: ParsedPhase['tasks']) => {
-    if (!token) return;
+    if (!user) return;
     try {
       const response = await fetch(`/api/projects/${projectId}/phases`, {
         method: "POST",
@@ -180,7 +178,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const deleteProject = async (id: number) => {
-    if (!token) return;
+    if (!user) return;
     try {
       const response = await fetch(`/api/projects/${id}`, {
         method: "DELETE",
@@ -223,7 +221,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const addTask = async (title: string, area: string, description?: string, doc_element_version_id?: number|null, phase_id?: number|null) => {
-    if (!selectedProject || !token) return;
+    if (!selectedProject || !user) return;
     try {
       const response = await fetch(`/api/projects/${selectedProject.id}/tasks`, {
         method: "POST",
@@ -239,7 +237,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const updateTask = async (id: number, updates: Partial<Task>) => {
-    if (!selectedProject || !token) return;
+    if (!selectedProject || !user) return;
     try {
       const response = await fetch(`/api/tasks/${id}`, {
         method: "PATCH",
@@ -255,7 +253,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const deleteTask = async (id: number) => {
-    if (!selectedProject || !token) return;
+    if (!selectedProject || !user) return;
     try {
       const response = await fetch(`/api/tasks/${id}`, {
         method: "DELETE",
@@ -274,7 +272,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const addDoc = async (title: string, content: string, element_id?: number, parent_id?: number | null) => {
-    if (!selectedProject || !token) return;
+    if (!selectedProject || !user) return;
     try {
       const response = await fetch(`/api/projects/${selectedProject.id}/docs`, {
         method: "POST",
@@ -291,15 +289,12 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const parseDocHierarchy = async (file: File): Promise<ParsedDocSection[]> => {
-    if (!token) throw new Error("Unauthorized");
+    if (!user) throw new Error("Unauthorized");
     const formData = new FormData();
     formData.append("file", file);
 
     const response = await fetch("/api/parse-doc-hierarchy", {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      },
       body: formData
     });
 
@@ -312,7 +307,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const importDocHierarchy = async (sections: ParsedDocSection[]) => {
-    if (!selectedProject || !token) return;
+    if (!selectedProject || !user) return;
     try {
       const response = await fetch(`/api/projects/${selectedProject.id}/import-docs`, {
         method: "POST",
@@ -332,15 +327,12 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const parseDocument = async (file: File): Promise<ParsedPhase> => {
-    if (!token) throw new Error("Unauthorized");
+    if (!user) throw new Error("Unauthorized");
     const formData = new FormData();
     formData.append("file", file);
 
     const response = await fetch("/api/parse-document", {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      },
       body: formData
     });
 
@@ -353,7 +345,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const importProject = async (parsedProject: ParsedPhase) => {
-    if (!token) return;
+    if (!user) return;
     try {
       const response = await fetch("/api/import-project", {
         method: "POST",

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
-import { ProjectModule } from '../../Main/module/Project';
-import type { ProjectType } from '../../Main/module/interfaces/Project';
-import type { ParsedPhase } from '../../Main/module/interfaces/ParsedProject';
+import { ProjectModule } from '../../Project/module/Project';
+import type { ProjectType } from '../../Project/module/interfaces/Project';
+import type { ParsedPhase } from '../../Project/module/interfaces/ParsedProject';
 import FileUpload from './FileUpload';
 import ImportPreview from './ImportPreview';
 
@@ -14,7 +14,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { projects, selectedProject, selectProject, addProject, parseDocument } = useProject();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectType, setNewProjectType] = useState<ProjectType>('jogo');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
@@ -101,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {user && (
             <div className="user-info">
               <span>{user.email}</span>
-              <button className="logout-btn-desktop" onClick={logout}>Sair</button>
+              <button className="logout-btn-desktop" onClick={signOut}>Sair</button>
             </div>
           )}
         </div>

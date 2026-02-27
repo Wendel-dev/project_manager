@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import type { Task } from '../contexts/ProjectContext';
-import type { ChecklistItem } from '../../Main/module/interfaces/Task';
+import type { ChecklistItem } from '../../Project/module/interfaces/Task';
 
 interface TaskDetailModalProps {
   task: Task;

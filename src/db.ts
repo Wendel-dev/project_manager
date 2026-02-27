@@ -78,6 +78,20 @@ for (const table of tables) {
   }
 }
 
+db.run(`
+  CREATE TABLE IF NOT EXISTS payments (
+    id TEXT PRIMARY KEY,
+    provider_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    currency TEXT NOT NULL,
+    status TEXT NOT NULL,
+    metadata TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 // Migration for projects current_phase_id
 const projectsInfo = db.query("PRAGMA table_info(projects)").all() as any[];
 if (!projectsInfo.find((col) => col.name === "current_phase_id")) {

@@ -4,18 +4,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --hot src/index.ts",
-    "build": "bun build ./src/index.html --outdir=dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
+    "dev": "bun --hot src/index.ts --define:process.env.NODE_ENV='\"test\"'",
+    "build": "bun build ./src/index.html --outdir=dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*' --env='VITE_*'",
     "start": "NODE_ENV=production bun src/index.ts"
   },
   "dependencies": {
     "@types/pdf-parse": "^1.1.5",
+    "firebase": "^12.10.0",
     "jose": "^6.1.3",
     "pdf-parse": "^2.4.5",
     "react": "^19",
     "react-dom": "^19",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
+    "stripe": "^20.4.0",
     "unified": "^11.0.5",
     "zod": "^4.3.6"
   },

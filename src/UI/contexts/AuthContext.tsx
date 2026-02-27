@@ -1,63 +1,58 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { AuthRepositoryMock as AuthRepository } from "../../Main/infrastructure/AuthRepositoryMock";
-
-interface User {
-  id: string;
-  email: string;
-}
+import type { AppUser } from "../../Auth/domain/interfaces/AppUser";
+import { FetchAuthRepository } from "../../Auth/infrastructure/FetchAuthRepository";
+import type { IAuthRepository } from "../../Auth/application/interfaces/IAuthRepository";
 
 interface AuthContextType {
-  user: User | null;
-  token: string | null;
+  user: AppUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// No frontend, sempre usamos o FetchAuthRepository para interagir com nossa API
+const authRepository: IAuthRepository = new FetchAuthRepository();
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const authRepository = new AuthRepository();
 
   useEffect(() => {
-    const savedToken = localStorage.getItem("indieflow-auth-token");
-    const savedUser = localStorage.getItem("indieflow-user");
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
+    // Tenta recuperar a sessão atual ao carregar
+    const checkSession = async () => {
+      try {
+        const currentUser = await authRepository.verifyToken(""); // Chamada para /api/auth/me
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Failed to restore session:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSession();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const response = await authRepository.login(email, password);
-    const user = { id: response.user.id, email: response.user.email };
-    setToken(response.access_token);
-    setUser(user);
-    localStorage.setItem("indieflow-auth-token", response.access_token);
-    localStorage.setItem("indieflow-user", JSON.stringify(user));
+  const signIn = async (email: string, password: string) => {
+    const loggedUser = await authRepository.signIn(email, password);
+    setUser(loggedUser);
   };
 
   const signUp = async (email: string, password: string) => {
-    await authRepository.signUp(email, password);
-    // After signup, Supabase might require email confirmation or you can auto-login
-    // For now, we'll just throw a success message or let the user login
-    alert("Signup successful! Please login.");
+    const registeredUser = await authRepository.signUp(email, password);
+    setUser(registeredUser);
   };
 
-  const logout = () => {
-    setToken(null);
+  const signOut = async () => {
+    await authRepository.signOut();
     setUser(null);
-    localStorage.removeItem("indieflow-auth-token");
-    localStorage.removeItem("indieflow-user");
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signUp, logout }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

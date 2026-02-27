@@ -23,11 +23,37 @@ import { DocMarkdownParser } from "./Project/infrastructure/parsers/DocMarkdownP
 import { DocTextParser } from "./Project/infrastructure/parsers/DocTextParser";
 import { DocPDFParser } from "./Project/infrastructure/parsers/DocPDFParser";
 import { authenticate } from "./Auth/infrastructure/authMiddleware";
+import { PaymentRepository } from "./Payment/infrastructure/PaymentRepository";
+import { PaymentFactory } from "./Payment/infrastructure/PaymentFactory";
+import { ProcessPaymentUseCase } from "./Payment/application/ProcessPaymentUseCase";
+import { HandlePaymentWebhookUseCase } from "./Payment/application/HandlePaymentWebhookUseCase";
+import { FirebaseAuthRepository } from "./Auth/infrastructure/Firebase/FirebaseAuthRepository";
+import { AuthRepositoryMock } from "./Auth/infrastructure/Mocks/AuthRepositoryMock";
+import { auth } from "./Auth/infrastructure/Firebase/config";
+import { LoginUseCase } from "./Auth/application/LoginUseCase";
+import { RegisterUseCase } from "./Auth/application/RegisterUseCase";
+import { LogoutUseCase } from "./Auth/application/LogoutUseCase";
+import { GetSessionUseCase } from "./Auth/application/GetSessionUseCase";
 
 const projectRepo = new ProjectRepository();
 const taskRepo = new TaskRepository();
 const docRepo = new DocRepository();
 const phaseRepo = new PhaseRepository();
+const paymentRepo = new PaymentRepository();
+
+// Auth setup (only on backend)
+const authRepository = (process.env.NODE_ENV === "test" || !process.env.VITE_FIREBASE_API_KEY)
+  ? new AuthRepositoryMock() 
+  : new FirebaseAuthRepository(auth);
+console.log(process.env.NODE_ENV)
+const loginUseCase = new LoginUseCase(authRepository);
+const registerUseCase = new RegisterUseCase(authRepository);
+const logoutUseCase = new LogoutUseCase(authRepository);
+const getSessionUseCase = new GetSessionUseCase(authRepository);
+
+const paymentProvider = PaymentFactory.create();
+const processPaymentUseCase = new ProcessPaymentUseCase(paymentProvider, paymentRepo);
+const handlePaymentWebhookUseCase = new HandlePaymentWebhookUseCase(paymentProvider, paymentRepo);
 
 const addProjectUseCase = new AddProjectUseCase(projectRepo, taskRepo, phaseRepo);
 const updateProjectUseCase = new UpdateProjectUseCase(projectRepo);
@@ -63,10 +89,84 @@ async function handleProtected(req: Request, handler: (userId: string) => Promis
   }
 }
 
+process.env.NODE_ENV = "test"
+
 const server = serve({
   routes: {
     // Static assets
     "/index.css": new Response(Bun.file("./src/index.css")),
+
+    // Auth routes
+    "/api/auth/login": {
+      async POST(req) {
+        try {
+          const { email, password } = await req.json();
+          const { user, token } = await loginUseCase.execute(email, password);
+          
+          return new Response(JSON.stringify(user), {
+            headers: {
+              "Content-Type": "application/json",
+              "Set-Cookie": `session_token=${token}; HttpOnly; Secure; SameSite=Strict; Path=/`,
+            },
+          });
+        } catch (error) {
+          console.log("Login error:", error);
+          return Response.json({ error: (error as Error).message }, { status: 401 });
+        }
+      },
+    },
+
+    "/api/auth/register": {
+      async POST(req) {
+        try {
+          const { email, password } = await req.json();
+          const { user, token } = await registerUseCase.execute(email, password);
+          
+          return new Response(JSON.stringify(user), {
+            headers: {
+              "Content-Type": "application/json",
+              "Set-Cookie": `session_token=${token}; HttpOnly; Secure; SameSite=Strict; Path=/`,
+            },
+          });
+        } catch (error) {
+          return Response.json({ error: (error as Error).message }, { status: 400 });
+        }
+      },
+    },
+
+    "/api/auth/logout": {
+      async POST() {
+        await logoutUseCase.execute();
+        return new Response(JSON.stringify({ success: true }), {
+          headers: {
+            "Content-Type": "application/json",
+            "Set-Cookie": "session_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0",
+          },
+        });
+      },
+    },
+
+    "/api/auth/me": {
+      async GET(req) {
+        const userId = await authenticate(req);
+        if (!userId) return Response.json(null);
+
+        // Extract token from cookie for GetSessionUseCase
+        const cookieHeader = req.headers.get("Cookie");
+        const cookies = cookieHeader?.split(";").reduce((acc, cookie) => {
+          const [name, value] = cookie.trim().split("=");
+          if (!name || !value) return acc;
+          acc[name] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        const token = cookies?.["session_token"];
+
+        if (!token) return Response.json(null);
+
+        const user = await getSessionUseCase.execute(token);
+        return Response.json(user);
+      },
+    },
 
     // API routes
     "/api/projects": {
@@ -259,6 +359,38 @@ const server = serve({
           const report = await getGovernanceUseCase.execute(userId, id);
           return Response.json(report);
         });
+      },
+    },
+
+    "/api/payments/checkout": {
+      async POST(req) {
+        return handleProtected(req, async (userId) => {
+          const { amount, currency, successUrl, cancelUrl, metadata } = await req.json();
+          // Ideally get user email from a UserUseCase or Auth service
+          const result = await processPaymentUseCase.execute({
+            amount,
+            currency,
+            successUrl,
+            cancelUrl,
+            customerEmail: userId, // Placeholder if we don't have email yet
+            metadata: { ...metadata, userId },
+          });
+          return Response.json(result);
+        });
+      },
+    },
+
+    "/api/webhooks/stripe": {
+      async POST(req) {
+        try {
+          const signature = req.headers.get("stripe-signature") || "";
+          const payload = await req.text();
+          await handlePaymentWebhookUseCase.execute(payload, signature);
+          return Response.json({ received: true });
+        } catch (error) {
+          console.error("Webhook error:", error);
+          return Response.json({ error: (error as Error).message }, { status: 400 });
+        }
       },
     },
 

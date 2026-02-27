@@ -15,17 +15,13 @@ interface GovernanceData {
 
 const GovernanceAlerts: React.FC = () => {
   const { selectedProject, tasks, docs } = useProject();
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [govData, setGovData] = useState<GovernanceData | null>(null);
 
   const fetchGovernance = async () => {
-    if (!selectedProject || !token) return;
+    if (!selectedProject || !user) return;
     try {
-      const response = await fetch(`/api/projects/${selectedProject.id}/governance`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
+      const response = await fetch(`/api/projects/${selectedProject.id}/governance`);
       const data = await response.json();
       setGovData(data);
     } catch (error) {
@@ -37,7 +33,7 @@ const GovernanceAlerts: React.FC = () => {
     fetchGovernance();
     const interval = setInterval(fetchGovernance, 5000); // Poll every 5s for inertia check
     return () => clearInterval(interval);
-  }, [selectedProject, tasks, docs, token]);
+  }, [selectedProject, tasks, docs, user]);
 
   if (!govData) return null;
 

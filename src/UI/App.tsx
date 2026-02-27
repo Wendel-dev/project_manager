@@ -5,12 +5,29 @@ import Sidebar from "./components/Sidebar";
 import ProjectDashboard from "./components/ProjectDashboard";
 import { LoginForm } from "./components/LoginForm";
 import { RegisterForm } from "./components/RegisterForm";
+import { PaymentStatus } from "./components/PaymentStatus";
 
 function AppLayout() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { selectedProject } = useProject();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'success' | 'cancel' | null>(null);
+
+  // Simple route handling for payments
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path === "/payment/success") {
+      setPaymentStatus("success");
+    } else if (path === "/payment/cancel") {
+      setPaymentStatus("cancel");
+    }
+  }, []);
+
+  const handleBackToDashboard = () => {
+    setPaymentStatus(null);
+    window.history.pushState({}, "", "/");
+  };
 
   // Auto-open menu on mobile if no project is selected
   useEffect(() => {
@@ -35,12 +52,20 @@ function AppLayout() {
     );
   }
 
+  if (paymentStatus) {
+    return (
+      <div className="app-container">
+        <PaymentStatus status={paymentStatus} onBack={handleBackToDashboard} />
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       <header className="mobile-header">
         <span>IndieFlow</span>
         <div className="header-actions">
-          <button className="logout-btn" onClick={logout}>Sair</button>
+          <button className="logout-btn" onClick={signOut}>Sair</button>
           <button className="menu-toggle" onClick={() => setIsMenuOpen(true)}>☰</button>
         </div>
       </header>

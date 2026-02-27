@@ -3,7 +3,6 @@ import { useAuth } from "./UI/contexts/AuthContext";
 
 export function APITester() {
   const responseInputRef = useRef<HTMLTextAreaElement>(null);
-  const { token } = useAuth();
 
   const testEndpoint = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -15,10 +14,7 @@ export function APITester() {
       const url = new URL(endpoint, location.href);
       const method = formData.get("method") as string;
       const res = await fetch(url, { 
-        method,
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        method
       });
 
       const data = await res.json();

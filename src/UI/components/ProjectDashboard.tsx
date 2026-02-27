@@ -4,7 +4,7 @@ import KanbanBoard from './KanbanBoard';
 import DocEditor from './DocEditor';
 import GovernanceAlerts from './GovernanceAlerts';
 import PhaseTransitionModal from './PhaseTransitionModal';
-import { ProjectModule } from '../../Main/module/Project';
+import { ProjectModule } from '../../Project/module/Project';
 
 const ProjectDashboard: React.FC = () => {
   const { selectedProject, tasks, phases, createPhase, deleteProject, exportProjectDocs, docs } = useProject();
