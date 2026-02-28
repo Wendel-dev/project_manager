@@ -1,9 +1,8 @@
-// src/Payment/infrastructure/PaymentRepository.ts
-import db from '../../db';
-import { IPaymentRepository } from '../application/interfaces/IPaymentRepository';
-import { PaymentTransaction } from '../model/interfaces/Payment';
+import db from "../../../../Shared/infrastructure/persistence/SQLiteConnection";
+import { IPaymentRepository } from "../../application/interfaces/IPaymentRepository";
+import { PaymentTransaction } from "../../model/interfaces/Payment";
 
-export class PaymentRepository implements IPaymentRepository {
+export class SQLitePaymentRepository implements IPaymentRepository {
   async save(transaction: PaymentTransaction): Promise<void> {
     db.run(
       `INSERT INTO payments (id, provider_id, user_id, amount, currency, status, metadata) 
@@ -11,7 +10,7 @@ export class PaymentRepository implements IPaymentRepository {
       [
         transaction.id,
         transaction.providerId,
-        transaction.customerId, // Map customerId to user_id for simplicity or check if they're different
+        transaction.customerId, 
         transaction.amount,
         transaction.currency,
         transaction.status,

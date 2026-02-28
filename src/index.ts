@@ -1,9 +1,6 @@
 import { serve } from "bun";
 import index from "./index.html";
-import { ProjectRepository } from "./Project/infrastructure/ProjectRepository";
-import { TaskRepository } from "./Project/infrastructure/TaskRepository";
-import { DocRepository } from "./Project/infrastructure/DocRepository";
-import { PhaseRepository } from "./Project/infrastructure/PhaseRepository";
+import { ProjectRepositoryFactory } from "./Project/infrastructure/ProjectRepositoryFactory";
 import { AddProjectUseCase } from "./Project/application/AddProjectUseCase";
 import { UpdateProjectUseCase } from "./Project/application/UpdateProjectUseCase";
 import { DeleteProjectUseCase } from "./Project/application/DeleteProjectUseCase";
@@ -22,7 +19,7 @@ import { GetDocTreeUseCase } from "./Project/application/GetDocTreeUseCase";
 import { DocMarkdownParser } from "./Project/infrastructure/parsers/DocMarkdownParser";
 import { DocTextParser } from "./Project/infrastructure/parsers/DocTextParser";
 import { DocPDFParser } from "./Project/infrastructure/parsers/DocPDFParser";
-import { PaymentRepository } from "./Payment/infrastructure/PaymentRepository";
+import { PaymentRepositoryFactory } from "./Payment/infrastructure/PaymentRepositoryFactory";
 import { PaymentFactory } from "./Payment/infrastructure/PaymentFactory";
 import { ProcessPaymentUseCase } from "./Payment/application/ProcessPaymentUseCase";
 import { HandlePaymentWebhookUseCase } from "./Payment/application/HandlePaymentWebhookUseCase";
@@ -38,11 +35,13 @@ import { createAuthRoutes } from "./Auth/infrastructure/AuthRoutes";
 import { createProjectRoutes } from "./Project/infrastructure/ProjectRoutes";
 import { createPaymentRoutes } from "./Payment/infrastructure/PaymentRoutes";
 
-const projectRepo = new ProjectRepository();
-const taskRepo = new TaskRepository();
-const docRepo = new DocRepository();
-const phaseRepo = new PhaseRepository();
-const paymentRepo = new PaymentRepository();
+process.env.NODE_ENV = "test";
+
+const projectRepo = ProjectRepositoryFactory.createProjectRepository();
+const taskRepo = ProjectRepositoryFactory.createTaskRepository();
+const docRepo = ProjectRepositoryFactory.createDocRepository();
+const phaseRepo = ProjectRepositoryFactory.createPhaseRepository();
+const paymentRepo = PaymentRepositoryFactory.createPaymentRepository();
 
 // Auth setup
 const authRepository = (process.env.NODE_ENV === "test" || !process.env.VITE_FIREBASE_API_KEY)
@@ -81,8 +80,6 @@ const docParsers = [
 ];
 const parseDocDocumentUseCase = new ParseDocDocumentUseCase(docParsers);
 const importDocUseCase = new ImportDocUseCase(docRepo);
-
-process.env.NODE_ENV = "test";
 
 // Create route objects
 const authRoutes = createAuthRoutes(loginUseCase, registerUseCase, logoutUseCase, getSessionUseCase);

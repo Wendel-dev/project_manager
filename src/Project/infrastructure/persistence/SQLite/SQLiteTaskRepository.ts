@@ -1,8 +1,8 @@
-import db from "../../db";
-import type { TaskData } from "../module/interfaces/Task";
-import type { ITaskRepository } from "../application/interfaces/ITaskRepository";
+import db from "../../../../Shared/infrastructure/persistence/SQLiteConnection";
+import type { TaskData } from "../../module/interfaces/Task";
+import type { ITaskRepository } from "../../application/interfaces/ITaskRepository";
 
-export class TaskRepository implements ITaskRepository {
+export class SQLiteTaskRepository implements ITaskRepository {
   async findByProjectId(userId: string, projectId: number): Promise<TaskData[]> {
     return db.query("SELECT * FROM tasks WHERE project_id = ? AND user_id = ? ORDER BY created_at DESC").all(projectId, userId) as TaskData[];
   }

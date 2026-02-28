@@ -1,8 +1,8 @@
-import db from "../../db";
-import { PhaseData } from "../module/interfaces/Phase";
-import { IPhaseRepository } from "../application/interfaces/IPhaseRepository";
+import db from "../../../../Shared/infrastructure/persistence/SQLiteConnection";
+import { PhaseData } from "../../module/interfaces/Phase";
+import { IPhaseRepository } from "../../application/interfaces/IPhaseRepository";
 
-export class PhaseRepository implements IPhaseRepository {
+export class SQLitePhaseRepository implements IPhaseRepository {
   async findByProjectId(userId: string, projectId: number): Promise<PhaseData[]> {
     return db.query("SELECT * FROM phases WHERE project_id = ? AND user_id = ? ORDER BY order_index ASC").all(projectId, userId) as PhaseData[];
   }

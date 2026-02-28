@@ -1,8 +1,8 @@
-import db from "../../db";
-import type { ProjectData, ProjectType } from "../module/interfaces/Project";
-import type { IProjectRepository } from "../application/interfaces/IProjectRepository";
+import db from "../../../../Shared/infrastructure/persistence/SQLiteConnection";
+import type { ProjectData, ProjectType } from "../../module/interfaces/Project";
+import type { IProjectRepository } from "../../application/interfaces/IProjectRepository";
 
-export class ProjectRepository implements IProjectRepository {
+export class SQLiteProjectRepository implements IProjectRepository {
   async findAll(userId: string): Promise<ProjectData[]> {
     return db.query("SELECT * FROM projects WHERE user_id = ? ORDER BY created_at DESC").all(userId) as ProjectData[];
   }
@@ -13,8 +13,8 @@ export class ProjectRepository implements IProjectRepository {
 
   async create(userId: string, name: string, type: ProjectType, initialPhaseId: number): Promise<ProjectData> {
     const result = db.query(
-      "INSERT INTO projects (user_id, name, type, current_phase_id, current_phase) VALUES (?, ?, ?, ?, ?) RETURNING id"
-    ).get(userId, name, type, initialPhaseId, 'LEGACY') as { id: number };
+      "INSERT INTO projects (user_id, name, type, current_phase_id) VALUES (?, ?, ?, ?) RETURNING id"
+    ).get(userId, name, type, initialPhaseId) as { id: number };
 
     return {
       id: result.id,

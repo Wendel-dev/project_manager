@@ -1,8 +1,8 @@
-import db from "../../db";
-import type { DocElementData } from "../module/interfaces/Doc";
-import type { IDocRepository } from "../application/interfaces/IDocRepository";
+import db from "../../../../Shared/infrastructure/persistence/SQLiteConnection";
+import type { DocElementData } from "../../module/interfaces/Doc";
+import type { IDocRepository } from "../../application/interfaces/IDocRepository";
 
-export class DocRepository implements IDocRepository {
+export class SQLiteDocRepository implements IDocRepository {
   async findByProjectId(userId: string, projectId: number): Promise<DocElementData[]> {
     const results = db.query(`
       SELECT de.*, dev.content as current_content, dev.created_at as version_created_at
