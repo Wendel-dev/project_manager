@@ -1,6 +1,6 @@
 // src/Payment/infrastructure/StripePaymentProvider.ts
 import Stripe from 'stripe';
-import { IPaymentProvider, CheckoutOptions } from '../application/interfaces/IPaymentProvider';
+import type { IPaymentProvider, CheckoutOptions } from '../application/interfaces/IPaymentProvider';
 
 export class StripePaymentProvider implements IPaymentProvider {
   private stripe: Stripe;

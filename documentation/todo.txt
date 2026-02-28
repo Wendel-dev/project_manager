@@ -1,4 +1,4 @@
-configurar mysql
+criar tela de assinatura
 
 criar configuração por codigo
 empacotar serviço

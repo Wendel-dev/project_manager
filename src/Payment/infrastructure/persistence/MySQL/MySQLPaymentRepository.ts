@@ -1,7 +1,7 @@
 import { pool } from "../../../../Shared/infrastructure/persistence/MySQLConnection";
-import { IPaymentRepository } from "../../application/interfaces/IPaymentRepository";
-import { PaymentTransaction } from "../../model/interfaces/Payment";
-import { RowDataPacket } from "mysql2";
+import type { IPaymentRepository } from "../../../application/interfaces/IPaymentRepository";
+import type { PaymentTransaction } from "../../../model/interfaces/Payment";
+import type { RowDataPacket } from "mysql2";
 
 export class MySQLPaymentRepository implements IPaymentRepository {
   async save(transaction: PaymentTransaction): Promise<void> {

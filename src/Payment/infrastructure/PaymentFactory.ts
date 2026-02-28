@@ -1,5 +1,5 @@
 // src/Payment/infrastructure/PaymentFactory.ts
-import { IPaymentProvider } from '../application/interfaces/IPaymentProvider';
+import type { IPaymentProvider } from '../application/interfaces/IPaymentProvider';
 import { StripePaymentProvider } from './StripePaymentProvider';
 import { MockPaymentProvider } from './MockPaymentProvider';
 

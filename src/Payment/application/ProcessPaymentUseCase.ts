@@ -1,6 +1,6 @@
 // src/Payment/application/ProcessPaymentUseCase.ts
-import { IPaymentProvider, CheckoutOptions } from './interfaces/IPaymentProvider';
-import { IPaymentRepository } from './interfaces/IPaymentRepository';
+import type { IPaymentProvider, CheckoutOptions } from './interfaces/IPaymentProvider';
+import type { IPaymentRepository } from './interfaces/IPaymentRepository';
 
 export class ProcessPaymentUseCase {
   constructor(

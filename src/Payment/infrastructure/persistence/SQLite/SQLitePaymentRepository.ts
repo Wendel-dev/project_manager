@@ -1,6 +1,6 @@
 import db from "../../../../Shared/infrastructure/persistence/SQLiteConnection";
-import { IPaymentRepository } from "../../application/interfaces/IPaymentRepository";
-import { PaymentTransaction } from "../../model/interfaces/Payment";
+import type { IPaymentRepository } from "../../../application/interfaces/IPaymentRepository";
+import type { PaymentTransaction } from "../../../model/interfaces/Payment";
 
 export class SQLitePaymentRepository implements IPaymentRepository {
   async save(transaction: PaymentTransaction): Promise<void> {
