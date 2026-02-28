@@ -1,16 +1,34 @@
 import type { IProjectRepository } from './interfaces/IProjectRepository';
 import type { ITaskRepository } from './interfaces/ITaskRepository';
 import type { IPhaseRepository } from './interfaces/IPhaseRepository';
+import type { ISubscriptionRepository } from './interfaces/ISubscriptionRepository';
 import type { ParsedPhase } from '../module/interfaces/ParsedProject';
 
 export class ImportTasksUseCase {
   constructor(
     private projectRepository: IProjectRepository,
     private taskRepository: ITaskRepository,
-    private phaseRepository: IPhaseRepository
+    private phaseRepository: IPhaseRepository,
+    private subscriptionRepository: ISubscriptionRepository
   ) {}
 
   async execute(userId: string, parsedProject: ParsedPhase): Promise<{ projectId: number }> {
+    // 0. Project limit validation (Freemium logic)
+    const projectCount = await this.projectRepository.countByUserId(userId);
+    
+    if (projectCount >= 1) {
+      const subscription = await this.subscriptionRepository.findByUserId(userId);
+      const isSubscribed = subscription && 
+                           subscription.status === 'active' && 
+                           new Date(subscription.current_period_end) > new Date();
+
+      if (!isSubscribed) {
+        const error = new Error("Project limit reached. Upgrade to Pro to create more projects.");
+        (error as any).status = 403;
+        throw error;
+      }
+    }
+
     // 1. Create project temporarily
     const project = await this.projectRepository.create(
       userId,

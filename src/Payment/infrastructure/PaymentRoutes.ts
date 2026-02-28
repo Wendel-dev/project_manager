@@ -10,15 +10,11 @@ export function createPaymentRoutes(
     "/api/payments/checkout": {
       async POST(req: Request) {
         return handleProtected(req, async (userId) => {
-          const { amount, currency, successUrl, cancelUrl, metadata } = await req.json();
+          const body = await req.json();
           // Ideally get user email from a UserUseCase or Auth service
           const result = await processPaymentUseCase.execute({
-            amount,
-            currency,
-            successUrl,
-            cancelUrl,
-            customerEmail: userId, // Placeholder if we don't have email yet
-            metadata: { ...metadata, userId },
+            ...body,
+            metadata: { ...body.metadata, user_id: userId },
           });
           return Response.json(result);
         });

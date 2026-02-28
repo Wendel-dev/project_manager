@@ -31,27 +31,36 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     setParsedData(null);
   };
 
+  const isLimitReached = projects.length >= 1 && !user?.isSubscribed;
+
   const handleBasicSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLimitReached) {
+       if (window.confirm("Você atingiu o limite de 1 projeto no plano gratuito. Deseja fazer upgrade para o Pro?")) {
+         window.location.href = "/upgrade";
+       }
+       return;
+    }
     if (newProjectName) {
       setCreationStep('choice');
     }
   };
 
   const handleManualCreate = async () => {
-    const suggestions = ProjectModule.getPhases(newProjectType);
-    const finalPhase = manualPhase || suggestions[0];
-    await addProject(newProjectName, newProjectType, finalPhase);
-    resetForm();
-    onClose();
-  };
-
-  const handleFileSelect = async (file: File) => {
     try {
-      const parsed = await parseDocument(file);
-      setParsedData(parsed);
-    } catch (err) {
-      alert("Erro ao processar arquivo: " + (err as Error).message);
+      const suggestions = ProjectModule.getPhases(newProjectType);
+      const finalPhase = manualPhase || suggestions[0];
+      await addProject(newProjectName, newProjectType, finalPhase);
+      resetForm();
+      onClose();
+    } catch (err: any) {
+      if (err.message.includes("limit reached")) {
+        if (window.confirm("Limite de projetos atingido. Deseja fazer o upgrade?")) {
+          window.location.href = "/upgrade";
+        }
+      } else {
+        alert("Erro ao criar projeto: " + err.message);
+      }
     }
   };
 
@@ -61,8 +70,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       await addProject(newProjectName, newProjectType, project.name, project.tasks);
       resetForm();
       onClose();
-    } catch (err) {
-      alert("Erro ao importar: " + (err as Error).message);
+    } catch (err: any) {
+      if (err.message.includes("limit reached")) {
+        if (window.confirm("Limite de projetos atingido. Deseja fazer o upgrade?")) {
+          window.location.href = "/upgrade";
+        }
+      } else {
+        alert("Erro ao importar: " + err.message);
+      }
     }
   };
 
@@ -100,7 +115,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <h2>IndieFlow</h2>
           {user && (
             <div className="user-info">
-              <span>{user.email}</span>
+              <div className="user-email-row">
+                <span>{user.email}</span>
+                {user.isSubscribed ? (
+                  <span className="badge-pro">PRO</span>
+                ) : (
+                  <button className="upgrade-link" onClick={() => window.location.href = "/upgrade"}>PRO</button>
+                )}
+              </div>
               <button className="logout-btn-desktop" onClick={signOut}>Sair</button>
             </div>
           )}
@@ -223,6 +245,36 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         ))}
         {projects.length === 0 && <h3 className="project-type-header">Nenhum Projeto</h3>}
       </nav>
+
+      <style>{`
+        .user-email-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        .badge-pro {
+          background: #ffd700;
+          color: #000;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 0.7rem;
+          font-weight: bold;
+        }
+        .upgrade-link {
+          background: #444;
+          color: #fff;
+          border: none;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 0.7rem;
+          font-weight: bold;
+          cursor: pointer;
+        }
+        .upgrade-link:hover {
+          background: var(--primary-color);
+        }
+      `}</style>
     </aside>
     </>
   );

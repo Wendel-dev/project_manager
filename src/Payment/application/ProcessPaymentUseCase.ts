@@ -14,11 +14,15 @@ export class ProcessPaymentUseCase {
     await this.paymentRepository.save({
       id: crypto.randomUUID(),
       providerId: sessionId,
-      amount: options.amount,
+      amount: options.amount || 0,
       currency: options.currency,
       status: 'pending',
       customerId: options.customerEmail || 'unknown',
-      metadata: options.metadata,
+      metadata: {
+        ...options.metadata,
+        priceId: options.priceId,
+        mode: options.mode || 'payment'
+      },
     });
 
     return { url, sessionId };

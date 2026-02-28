@@ -1,5 +1,3 @@
-criar tela de assinatura
-
 criar configuração por codigo
 empacotar serviço
 
@@ -8,6 +6,7 @@ incluir a possibilidade de incluir um documento para adicionar tarefas sem adici
 download de arquivos de guia para fases e documentação
 modal para criar projeto.
 incluir grupo projetos Sites
+somente usuários com plano pró podem cadastrar por documentação
 
 incluir função de usar IA para criar modelo de documento para documentação e fases
 incluir possibilidade de adicionar APIKey e salvar no navegador.

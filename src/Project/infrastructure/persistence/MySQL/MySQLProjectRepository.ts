@@ -22,6 +22,14 @@ export class MySQLProjectRepository implements IProjectRepository {
     return rows.length > 0 ? rows[0] : null;
   }
 
+  async countByUserId(userId: string): Promise<number> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+      "SELECT COUNT(*) as count FROM projects WHERE user_id = ?",
+      [userId]
+    );
+    return rows[0].count;
+  }
+
   async create(userId: string, name: string, type: ProjectType, initialPhaseId: number): Promise<ProjectData> {
     const [result] = await pool.execute<ResultSetHeader>(
       "INSERT INTO projects (user_id, name, type, current_phase_id) VALUES (?, ?, ?, ?)",

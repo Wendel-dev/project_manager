@@ -46,9 +46,20 @@ export function createProjectRoutes(deps: {
       },
       async POST(req: Request) {
         return handleProtected(req, async (userId) => {
-          const { name, type, initialPhaseName, tasks } = await req.json();
-          const result = await deps.addProjectUseCase.execute(userId, name, type, initialPhaseName, tasks);
-          return Response.json(result, { status: 201 });
+          try {
+            const { name, type, initialPhaseName, tasks } = await req.json();
+            const result = await deps.addProjectUseCase.execute(userId, name, type, initialPhaseName, tasks);
+            return Response.json(result, { status: 201 });
+          } catch (error: any) {
+            if (error.status === 403) {
+              return Response.json({ 
+                error: error.message, 
+                code: "LIMIT_EXCEEDED",
+                upgradeUrl: "/upgrade" 
+              }, { status: 403 });
+            }
+            throw error;
+          }
         });
       },
     },
@@ -98,9 +109,20 @@ export function createProjectRoutes(deps: {
     "/api/import-project": {
       async POST(req: Request) {
         return handleProtected(req, async (userId) => {
-          const parsedProject = await req.json();
-          const result = await deps.importTasksUseCase.execute(userId, parsedProject);
-          return Response.json(result, { status: 201 });
+          try {
+            const parsedProject = await req.json();
+            const result = await deps.importTasksUseCase.execute(userId, parsedProject);
+            return Response.json(result, { status: 201 });
+          } catch (error: any) {
+            if (error.status === 403) {
+              return Response.json({ 
+                error: error.message, 
+                code: "LIMIT_EXCEEDED",
+                upgradeUrl: "/upgrade" 
+              }, { status: 403 });
+            }
+            throw error;
+          }
         });
       },
     },

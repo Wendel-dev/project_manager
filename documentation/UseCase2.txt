@@ -1,0 +1,5 @@
+usuário faz login
+usuário entra no projeto
+usuário deleta o projeto
+usuário cria um novo projeto com um documento de expecificação da fase inicial e documentação do projeto
+após criar o projeto o usuário consegue ver as tarefas do documento e os tópicos da documentação

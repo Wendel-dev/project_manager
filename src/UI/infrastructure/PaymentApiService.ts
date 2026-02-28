@@ -1,9 +1,13 @@
 import { getHeaders, handleResponse } from "./ApiUtils";
 
 export interface CheckoutOptions {
-  amount: number;
+  amount?: number;
   currency: string;
   metadata?: Record<string, any>;
+  priceId?: string;
+  mode?: 'payment' | 'subscription';
+  successUrl?: string;
+  cancelUrl?: string;
 }
 
 export class PaymentApiService {
@@ -13,8 +17,8 @@ export class PaymentApiService {
       headers: getHeaders(),
       body: JSON.stringify({
         ...options,
-        successUrl: window.location.origin + "/payment/success",
-        cancelUrl: window.location.origin + "/payment/cancel",
+        successUrl: options.successUrl || window.location.origin + "/payment/success",
+        cancelUrl: options.cancelUrl || window.location.origin + "/payment/cancel",
       }),
     });
 

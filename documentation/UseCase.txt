@@ -1,0 +1,5 @@
+usuário cria a conta
+usuário cria um projeto somente com nome
+usuário cria uma tarefa manualmente
+usuário cria um item de documentação manualmente
+usuário tenta criar um novo projeto mas não está com assinatura ativa

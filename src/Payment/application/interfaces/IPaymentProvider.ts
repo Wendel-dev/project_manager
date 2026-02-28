@@ -1,11 +1,13 @@
 // src/Payment/application/interfaces/IPaymentProvider.ts
 export interface CheckoutOptions {
-  amount: number;
+  amount?: number;
   currency: string;
   successUrl: string;
   cancelUrl: string;
   customerEmail?: string;
   metadata?: Record<string, string>;
+  priceId?: string;
+  mode?: 'payment' | 'subscription';
 }
 
 export interface IPaymentProvider {

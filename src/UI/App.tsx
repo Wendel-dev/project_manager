@@ -6,6 +6,7 @@ import ProjectDashboard from "./components/ProjectDashboard";
 import { LoginForm } from "./components/LoginForm";
 import { RegisterForm } from "./components/RegisterForm";
 import { PaymentStatus } from "./components/PaymentStatus";
+import UpgradePlans from "./components/UpgradePlans";
 
 function AppLayout() {
   const { user, loading, signOut } = useAuth();
@@ -13,20 +14,31 @@ function AppLayout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'success' | 'cancel' | null>(null);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
-  // Simple route handling for payments
+  // Simple route handling
   useEffect(() => {
-    const path = window.location.pathname;
-    if (path === "/payment/success") {
+    const handlePopState = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    
+    // Check initial path
+    if (currentPath === "/payment/success") {
       setPaymentStatus("success");
-    } else if (path === "/payment/cancel") {
+    } else if (currentPath === "/payment/cancel") {
       setPaymentStatus("cancel");
     }
-  }, []);
+
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentPath]);
+
+  const navigateTo = (path: string) => {
+    window.history.pushState({}, "", path);
+    setCurrentPath(path);
+    if (path === "/") setPaymentStatus(null);
+  };
 
   const handleBackToDashboard = () => {
-    setPaymentStatus(null);
-    window.history.pushState({}, "", "/");
+    navigateTo("/");
   };
 
   // Auto-open menu on mobile if no project is selected
@@ -48,6 +60,14 @@ function AppLayout() {
         <button className="toggle-auth" onClick={() => setShowRegister(!showRegister)}>
           {showRegister ? "Já tem conta? Entre aqui" : "Não tem conta? Cadastre-se"}
         </button>
+      </div>
+    );
+  }
+
+  if (currentPath === "/upgrade") {
+    return (
+      <div className="app-container">
+        <UpgradePlans onBack={handleBackToDashboard} />
       </div>
     );
   }

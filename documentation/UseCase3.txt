@@ -1,0 +1,5 @@
+usuário já tem 1 projeto.
+usuário faz uma assinatura.
+usuário cria um novo projeto somente com nome.
+usuário cria tarefas enviando um novo documento.
+usuário cria documentação inserindo um documento.

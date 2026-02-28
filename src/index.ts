@@ -41,26 +41,26 @@ const projectRepo = ProjectRepositoryFactory.createProjectRepository();
 const taskRepo = ProjectRepositoryFactory.createTaskRepository();
 const docRepo = ProjectRepositoryFactory.createDocRepository();
 const phaseRepo = ProjectRepositoryFactory.createPhaseRepository();
+const subscriptionRepo = ProjectRepositoryFactory.createSubscriptionRepository();
 const paymentRepo = PaymentRepositoryFactory.createPaymentRepository();
 
 // Auth setup
 const authRepository = (process.env.NODE_ENV === "test" || !process.env.VITE_FIREBASE_API_KEY)
-  ? new AuthRepositoryMock() 
+  ? new AuthRepositoryMock()
   : new FirebaseAuthRepository(auth);
 
 const loginUseCase = new LoginUseCase(authRepository);
 const registerUseCase = new RegisterUseCase(authRepository);
 const logoutUseCase = new LogoutUseCase(authRepository);
-const getSessionUseCase = new GetSessionUseCase(authRepository);
+const getSessionUseCase = new GetSessionUseCase(authRepository, subscriptionRepo);
 
 // Payment setup
 const paymentProvider = PaymentFactory.create();
 const processPaymentUseCase = new ProcessPaymentUseCase(paymentProvider, paymentRepo);
-const handlePaymentWebhookUseCase = new HandlePaymentWebhookUseCase(paymentProvider, paymentRepo);
+const handlePaymentWebhookUseCase = new HandlePaymentWebhookUseCase(paymentProvider, paymentRepo, subscriptionRepo);
 
 // Project setup
-const addProjectUseCase = new AddProjectUseCase(projectRepo, taskRepo, phaseRepo);
-const updateProjectUseCase = new UpdateProjectUseCase(projectRepo);
+const addProjectUseCase = new AddProjectUseCase(projectRepo, taskRepo, phaseRepo, subscriptionRepo);const updateProjectUseCase = new UpdateProjectUseCase(projectRepo);
 const deleteProjectUseCase = new DeleteProjectUseCase(projectRepo);
 const getTasksUseCase = new GetTasksUseCase(taskRepo);
 const addTaskUseCase = new AddTaskUseCase(taskRepo);
@@ -70,7 +70,7 @@ const getDocTreeUseCase = new GetDocTreeUseCase(docRepo);
 const saveDocUseCase = new SaveDocUseCase(docRepo);
 const getGovernanceUseCase = new GetGovernanceUseCase(taskRepo);
 const parseDocumentUseCase = new ParseDocumentUseCase();
-const importTasksUseCase = new ImportTasksUseCase(projectRepo, taskRepo, phaseRepo);
+const importTasksUseCase = new ImportTasksUseCase(projectRepo, taskRepo, phaseRepo, subscriptionRepo);
 const createPhaseUseCase = new CreatePhaseUseCase(projectRepo, taskRepo, phaseRepo);
 
 const docParsers = [

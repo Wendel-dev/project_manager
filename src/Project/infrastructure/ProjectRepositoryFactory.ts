@@ -6,10 +6,13 @@ import { MySQLProjectRepository } from "./persistence/MySQL/MySQLProjectReposito
 import { MySQLTaskRepository } from "./persistence/MySQL/MySQLTaskRepository";
 import { MySQLPhaseRepository } from "./persistence/MySQL/MySQLPhaseRepository";
 import { MySQLDocRepository } from "./persistence/MySQL/MySQLDocRepository";
+import { MySQLSubscriptionRepository } from "./persistence/MySQL/MySQLSubscriptionRepository";
+import { MockSubscriptionRepository } from "./persistence/Mocks/MockSubscriptionRepository";
 import type { IProjectRepository } from "../application/interfaces/IProjectRepository";
 import type { ITaskRepository } from "../application/interfaces/ITaskRepository";
 import type { IPhaseRepository } from "../application/interfaces/IPhaseRepository";
 import type { IDocRepository } from "../application/interfaces/IDocRepository";
+import type { ISubscriptionRepository } from "../application/interfaces/ISubscriptionRepository";
 
 export class ProjectRepositoryFactory {
   static createProjectRepository(): IProjectRepository {
@@ -49,6 +52,16 @@ export class ProjectRepositoryFactory {
         return new MySQLDocRepository();
       default: 
         return new SQLiteDocRepository();
+    }
+  }
+
+  static createSubscriptionRepository(): ISubscriptionRepository {
+    const dbType = process.env.DB_TYPE;
+    switch(dbType) {
+      case 'mysql':
+        return new MySQLSubscriptionRepository();
+      default: 
+        return new MockSubscriptionRepository();
     }
   }
 }

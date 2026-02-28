@@ -1,76 +1,70 @@
-# Especificação Técnica: Implementação de Assinatura SaaS (Modelo Recorrente)
+# Especificação Técnica: Implementação de Assinatura SaaS e Limite de Projetos
 
-Este documento detalha a implementação do sistema de assinaturas para o IndieFlow, focado exclusivamente no modelo recorrente (SaaS), com validação centralizada no MySQL.
+Este documento detalha as tarefas necessárias para transformar o sistema de pagamentos atual em um modelo SaaS recorrente, com validação de limite de projetos (Freemium) realizada exclusivamente no servidor (MySQL).
 
 ## 1. Banco de Dados (Servidor - MySQL)
 
-### Tabela de Assinaturas (Exclusivo MySQL)
-- [ ] Criar a tabela `subscriptions` para gerenciar o acesso recorrente.
+### 1.1. Nova Tabela de Assinaturas
+- [ ] Criar a tabela `subscriptions` no MySQL (esta tabela NÃO deve existir no SQLite).
   ```sql
-  CREATE TABLE subscriptions (
+  CREATE TABLE IF NOT EXISTS subscriptions (
     id VARCHAR(255) PRIMARY KEY, -- ID da assinatura no Stripe (sub_...)
     user_id VARCHAR(255) NOT NULL,
+    stripe_customer_id VARCHAR(255) NOT NULL,
     status ENUM('active', 'canceled', 'past_due', 'incomplete', 'trialing') NOT NULL,
     current_period_end DATETIME NOT NULL,
-    stripe_customer_id VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX (user_id)
-  );
+    INDEX (user_id),
+    INDEX (status)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   ```
 
-## 2. Backend (Assinaturas e Webhooks)
+### 1.2. Atualização do Repositório de Projetos
+- [ ] Adicionar o método `countByUserId(userId: string): Promise<number>` na interface `IProjectRepository`.
+- [ ] Implementar `countByUserId` no `MySQLProjectRepository.ts` usando `SELECT COUNT(*)`.
 
-### Alterações em `src/Payment/application/interfaces/IPaymentProvider.ts`
-- [ ] Alterar `CheckoutOptions` para aceitar `priceId` em vez de `amount`.
-  ```typescript
-  export interface CheckoutOptions {
-    priceId: string; // ID do preço configurado no Stripe (ex: price_123...)
-    successUrl: string;
-    cancelUrl: string;
-    customerEmail?: string;
-    metadata?: Record<string, string>;
-  }
-  ```
+## 2. Backend (Lógica de Negócio e Segurança)
 
-### Alterações em `src/Payment/infrastructure/StripePaymentProvider.ts`
-- [ ] Configurar `mode: 'subscription'` permanentemente.
-- [ ] Usar o `priceId` fornecido para criar a sessão de checkout.
-- [ ] Implementar `verifyWebhookSignature` para validar a autenticidade dos eventos.
+### 2.1. Novo Repositório de Assinatura
+- [ ] Criar `ISubscriptionRepository.ts` em `src/Project/application/interfaces/`.
+- [ ] Criar `MySQLSubscriptionRepository.ts` em `src/Project/infrastructure/persistence/MySQL/`.
 
-### Alterações em `src/Payment/application/HandlePaymentWebhookUseCase.ts`
-- [ ] Implementar lógica para os seguintes eventos críticos:
-    - `checkout.session.completed`: Criar o registro inicial da assinatura no MySQL.
-    - `invoice.payment_succeeded`: Atualizar a data `current_period_end` (renovação).
-    - `customer.subscription.deleted`: Marcar status como `canceled` e remover acesso.
-    - `customer.subscription.updated`: Atualizar status (ex: de `active` para `past_due` se o cartão falhar).
+### 2.2. Validação no `AddProjectUseCase.ts`
+- [ ] Injetar `ISubscriptionRepository` no construtor.
+- [ ] Implementar a validação antes da criação do projeto:
+  1. Contar projetos atuais do usuário.
+  2. Verificar se existe uma assinatura com status 'active' e `current_period_end` no futuro.
+  3. Se `count >= 1` e não for assinante, lançar erro customizado.
 
-## 3. Segurança e Validação (MySQL)
+### 2.3. Atualização do `StripePaymentProvider.ts`
+- [ ] Alterar `createCheckoutSession` para:
+    - Aceitar `priceId` (ID do plano no Stripe) em vez de `amount`.
+    - Definir `mode: 'subscription'`.
+- [ ] Configurar o webhook para lidar com `customer.subscription.updated` e `customer.subscription.deleted`.
 
-### Novo Repositório: `src/Payment/infrastructure/persistence/MySQL/MySQLSubscriptionRepository.ts`
-- [ ] Métodos: `save(sub)`, `updateStatus(id, status)`, `getByUserId(userId)`.
+## 3. Integração e API
 
-### Alterações em `src/Auth/application/GetSessionUseCase.ts`
-- [ ] Integrar a consulta ao MySQL:
-  ```typescript
-  const subscription = await subscriptionRepository.getByUserId(user.id);
-  user.isSubscribed = subscription?.status === 'active' && 
-                      new Date(subscription.current_period_end) > new Date();
-  ```
+### 3.1. Rota de Autenticação (`/api/auth/me`)
+- [ ] Modificar o `GetSessionUseCase` ou a rota para incluir o campo `isSubscribed` no retorno do usuário, consultando o MySQL.
 
-## 4. Frontend (UI e Gating)
+### 3.2. Tratamento de Erro na Rota de Projeto
+- [ ] No `ProjectRoutes.ts`, capturar o erro de limite excedido e retornar Status 403 com um JSON contendo a mensagem e o link para a página de planos.
 
-### Alterações em `src/UI/infrastructure/PaymentApiService.ts`
-- [ ] Criar método `createSubscription(priceId: string)` que redireciona para o checkout do Stripe.
+## 4. Frontend (UI)
 
-### Alterações em `src/UI/App.tsx`
-- [ ] Adicionar lógica de proteção: Se `user.isSubscribed` for falso, exibir a tela de planos ou um aviso de "Assinatura Expirada".
+### 4.1. Bloqueio Visual
+- [ ] No `ProjectContext.tsx` ou `AuthContext.tsx`, expor o estado `isSubscribed`.
+- [ ] No componente de criação de projeto, desabilitar o botão ou redirecionar para `/upgrade` se o usuário atingir o limite e não for assinante.
 
-## 5. Fluxo de Execução Recomendado
+### 4.2. Página de Planos
+- [ ] Criar uma tela simples exibindo o plano Pro e o botão "Assinar Agora" que chama o checkout do Stripe.
 
-1.  **Configuração Stripe**: Criar um Produto e um Preço Mensal no painel do Stripe.
-2.  **Migração MySQL**: Criar a tabela `subscriptions`.
-3.  **Core Backend**: Atualizar `StripePaymentProvider` para o modo subscription.
-4.  **Webhooks**: Implementar o `HandlePaymentWebhookUseCase` injetando o repositório MySQL.
-5.  **Validação**: Atualizar a rota `/api/auth/me` para retornar o status real do banco MySQL.
-6.  **UI**: Implementar o botão "Assinar Agora" no Dashboard.
+## 5. Ordem de Implementação Recomendada
+
+1. **Infra MySQL**: Criar a tabela e o método de contagem no repositório.
+2. **Subscription Core**: Criar o repositório de assinatura e o UseCase de verificação.
+3. **Trava de Segurança**: Implementar a lógica no `AddProjectUseCase`.
+4. **Fluxo de Checkout**: Atualizar o Stripe Provider para o modo assinatura.
+5. **Webhooks**: Implementar a sincronização do status da assinatura.
+6. **Frontend**: Refletir o status da assinatura na interface.

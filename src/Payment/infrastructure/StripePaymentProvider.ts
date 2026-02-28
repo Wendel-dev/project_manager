@@ -12,25 +12,41 @@ export class StripePaymentProvider implements IPaymentProvider {
   }
 
   async createCheckoutSession(options: CheckoutOptions): Promise<{ url: string; sessionId: string }> {
+    const isSubscription = options.mode === 'subscription';
+    
+    const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+
+    if (isSubscription && options.priceId) {
+      line_items.push({
+        price: options.priceId,
+        quantity: 1,
+      });
+    } else if (options.amount) {
+      line_items.push({
+        price_data: {
+          currency: options.currency,
+          product_data: {
+            name: 'Project Payment',
+          },
+          unit_amount: options.amount,
+        },
+        quantity: 1,
+      });
+    } else {
+      throw new Error('Either amount or priceId must be provided');
+    }
+
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: options.currency,
-            product_data: {
-              name: 'Project Payment',
-            },
-            unit_amount: options.amount,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
+      line_items,
+      mode: options.mode || 'payment',
       success_url: options.successUrl,
       cancel_url: options.cancelUrl,
       customer_email: options.customerEmail,
       metadata: options.metadata,
+      subscription_data: isSubscription ? {
+        metadata: options.metadata,
+      } : undefined,
     }, {
       idempotencyKey: options.metadata?.transactionId || crypto.randomUUID(),
     });
