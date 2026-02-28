@@ -1,17 +1,16 @@
-// src/UI/services/PaymentService.ts
+import { getHeaders, handleResponse } from "./ApiUtils";
+
 export interface CheckoutOptions {
   amount: number;
   currency: string;
   metadata?: Record<string, any>;
 }
 
-export const PaymentService = {
-  async createCheckoutSession(options: CheckoutOptions): Promise<{ url: string }> {
+export class PaymentApiService {
+  static async createCheckoutSession(options: CheckoutOptions): Promise<{ url: string }> {
     const response = await fetch("/api/payments/checkout", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         ...options,
         successUrl: window.location.origin + "/payment/success",
@@ -19,16 +18,11 @@ export const PaymentService = {
       }),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to create checkout session");
-    }
+    return handleResponse(response);
+  }
 
-    return response.json();
-  },
-
-  async redirectToCheckout(options: CheckoutOptions) {
+  static async redirectToCheckout(options: CheckoutOptions) {
     const { url } = await this.createCheckoutSession(options);
     window.location.href = url;
-  },
-};
+  }
+}

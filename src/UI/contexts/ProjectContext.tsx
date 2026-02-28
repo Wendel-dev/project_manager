@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
-import { ProjectRepositoryAPI } from "../../Project/infrastructure/ProjectRepositoryAPI";
 import type { ProjectData, ProjectType } from "../../Project/module/interfaces/Project";
 import type { PhaseData } from "../../Project/module/interfaces/Phase";
 import type { ParsedPhase } from "../../Project/module/interfaces/ParsedProject";
@@ -8,6 +7,13 @@ import type { DocElementData, ParsedDocSection } from "../../Project/module/inte
 import { useAuth } from "./AuthContext";
 import { ExportDocUseCase } from "../../Project/application/ExportDocUseCase";
 import type { DocTreeNode } from "../../Project/application/GetDocTreeUseCase";
+
+// API Services
+import { ProjectApiService } from "../infrastructure/ProjectApiService";
+import { TaskApiService } from "../infrastructure/TaskApiService";
+import { PhaseApiService } from "../infrastructure/PhaseApiService";
+import { DocApiService } from "../infrastructure/DocApiService";
+import { ParsingApiService } from "../infrastructure/ParsingApiService";
 
 export type Project = ProjectData;
 export type Phase = PhaseData;
@@ -65,17 +71,10 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [docs, setDocs] = useState<DocElement[]>([]);
   const { user } = useAuth();
 
-  // Instantiate Repository and UseCase for the frontend
-  const projectRepository = useMemo(() => new ProjectRepositoryAPI(), []);
-
-  const getHeaders = () => ({
-    "Content-Type": "application/json"
-  });
-
   const fetchProjects = async () => {
     if (!user) return;
     try {
-      const data = await projectRepository.findAll(user.id);
+      const data = await ProjectApiService.findAll();
       setProjects(data);
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -85,10 +84,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const fetchTasks = async (projectId: number) => {
     if (!user) return;
     try {
-      const response = await fetch(`/api/projects/${projectId}/tasks`, {
-        headers: getHeaders()
-      });
-      const data = await response.json();
+      const data = await TaskApiService.findByProject(projectId);
       setTasks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -99,10 +95,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const fetchPhases = async (projectId: number) => {
     if (!user) return;
     try {
-      const response = await fetch(`/api/projects/${projectId}/phases`, {
-        headers: getHeaders()
-      });
-      const data = await response.json();
+      const data = await PhaseApiService.findByProject(projectId);
       setPhases(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching phases:", error);
@@ -113,10 +106,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const fetchDocs = async (projectId: number) => {
     if (!user) return;
     try {
-      const response = await fetch(`/api/projects/${projectId}/docs`, {
-        headers: getHeaders()
-      });
-      const data = await response.json();
+      const data = await DocApiService.getTree(projectId);
       setDocs(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching docs:", error);
@@ -137,14 +127,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const addProject = async (name: string, type: ProjectType, initialPhaseName?: string, tasks?: ParsedPhase['tasks']) => {
     if (!user) return;
     try {
-      const response = await fetch("/api/projects", {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({ name, type, initialPhaseName, tasks }),
-      });
-      if (response.ok) {
-        await fetchProjects();
-      }
+      await ProjectApiService.create({ name, type, initialPhaseName, tasks });
+      await fetchProjects();
     } catch (error) {
       console.error("Error adding project:", error);
     }
@@ -153,22 +137,16 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const createPhase = async (projectId: number, phaseName: string, tasks?: ParsedPhase['tasks']) => {
     if (!user) return;
     try {
-      const response = await fetch(`/api/projects/${projectId}/phases`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({ phaseName, tasks }),
-      });
-      if (response.ok) {
-        await fetchProjects();
-        // Update selected project if it's the one that transitioned
-        if (selectedProject?.id === projectId) {
-          const updatedProjects = await projectRepository.findAll(user!.id);
-          const updated = updatedProjects.find(p => p.id === projectId);
-          if (updated) {
-            setSelectedProject(updated);
-            await fetchPhases(projectId);
-            await fetchTasks(projectId);
-          }
+      await PhaseApiService.create(projectId, { phaseName, tasks });
+      await fetchProjects();
+      
+      // Update selected project if it's the one that transitioned
+      if (selectedProject?.id === projectId) {
+        const updated = await ProjectApiService.findById(projectId);
+        if (updated) {
+          setSelectedProject(updated);
+          await fetchPhases(projectId);
+          await fetchTasks(projectId);
         }
       }
     } catch (error) {
@@ -180,22 +158,14 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const deleteProject = async (id: number) => {
     if (!user) return;
     try {
-      const response = await fetch(`/api/projects/${id}`, {
-        method: "DELETE",
-        headers: getHeaders(),
-      });
-      if (response.ok) {
-        if (selectedProject?.id === id) {
-          setSelectedProject(null);
-          setTasks([]);
-          setPhases([]);
-          setDocs([]);
-        }
-        await fetchProjects();
-      } else {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to delete project");
+      await ProjectApiService.delete(id);
+      if (selectedProject?.id === id) {
+        setSelectedProject(null);
+        setTasks([]);
+        setPhases([]);
+        setDocs([]);
       }
+      await fetchProjects();
     } catch (error) {
       console.error("Error deleting project:", error);
       throw error;
@@ -223,14 +193,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const addTask = async (title: string, area: string, description?: string, doc_element_version_id?: number|null, phase_id?: number|null) => {
     if (!selectedProject || !user) return;
     try {
-      const response = await fetch(`/api/projects/${selectedProject.id}/tasks`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({ title, area, description, doc_element_version_id, phase_id }),
-      });
-      if (response.ok) {
-        await fetchTasks(selectedProject.id);
-      }
+      await TaskApiService.create(selectedProject.id, { title, area, description, doc_element_version_id, phase_id });
+      await fetchTasks(selectedProject.id);
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -239,14 +203,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const updateTask = async (id: number, updates: Partial<Task>) => {
     if (!selectedProject || !user) return;
     try {
-      const response = await fetch(`/api/tasks/${id}`, {
-        method: "PATCH",
-        headers: getHeaders(),
-        body: JSON.stringify(updates),
-      });
-      if (response.ok) {
-        await fetchTasks(selectedProject.id);
-      }
+      await TaskApiService.update(id, updates);
+      await fetchTasks(selectedProject.id);
     } catch (error) {
       console.error("Error updating task:", error);
     }
@@ -255,16 +213,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const deleteTask = async (id: number) => {
     if (!selectedProject || !user) return;
     try {
-      const response = await fetch(`/api/tasks/${id}`, {
-        method: "DELETE",
-        headers: getHeaders(),
-      });
-      if (response.ok) {
-        await fetchTasks(selectedProject.id);
-      } else {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to delete task");
-      }
+      await TaskApiService.delete(id);
+      await fetchTasks(selectedProject.id);
     } catch (error) {
       console.error("Error deleting task:", error);
       throw error;
@@ -274,15 +224,9 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const addDoc = async (title: string, content: string, element_id?: number, parent_id?: number | null) => {
     if (!selectedProject || !user) return;
     try {
-      const response = await fetch(`/api/projects/${selectedProject.id}/docs`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({ title, content, element_id, parent_id }),
-      });
-      if (response.ok) {
-        await fetchDocs(selectedProject.id);
-        await fetchTasks(selectedProject.id);
-      }
+      await DocApiService.save(selectedProject.id, { title, content, element_id, parent_id });
+      await fetchDocs(selectedProject.id);
+      await fetchTasks(selectedProject.id);
     } catch (error) {
       console.error("Error adding/updating doc:", error);
     }
@@ -290,36 +234,14 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const parseDocHierarchy = async (file: File): Promise<ParsedDocSection[]> => {
     if (!user) throw new Error("Unauthorized");
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch("/api/parse-doc-hierarchy", {
-      method: "POST",
-      body: formData
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error || "Failed to parse document hierarchy");
-    }
-
-    return await response.json();
+    return await ParsingApiService.parseDocHierarchy(file);
   };
 
   const importDocHierarchy = async (sections: ParsedDocSection[]) => {
     if (!selectedProject || !user) return;
     try {
-      const response = await fetch(`/api/projects/${selectedProject.id}/import-docs`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify(sections),
-      });
-      if (response.ok) {
-        await fetchDocs(selectedProject.id);
-      } else {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to import documents");
-      }
+      await DocApiService.importHierarchy(selectedProject.id, sections);
+      await fetchDocs(selectedProject.id);
     } catch (error) {
       console.error("Error importing documents:", error);
       throw error;
@@ -328,36 +250,14 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const parseDocument = async (file: File): Promise<ParsedPhase> => {
     if (!user) throw new Error("Unauthorized");
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch("/api/parse-document", {
-      method: "POST",
-      body: formData
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error || "Failed to parse document");
-    }
-
-    return await response.json();
+    return await ParsingApiService.parseProjectFile(file);
   };
 
   const importProject = async (parsedProject: ParsedPhase) => {
     if (!user) return;
     try {
-      const response = await fetch("/api/import-project", {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify(parsedProject),
-      });
-      if (response.ok) {
-        await fetchProjects();
-      } else {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to import project");
-      }
+      await ParsingApiService.importProject(parsedProject);
+      await fetchProjects();
     } catch (error) {
       console.error("Error importing project:", error);
       throw error;

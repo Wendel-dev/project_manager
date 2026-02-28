@@ -1,60 +1,77 @@
-# SPEC: Refactoring Routes and Dependencies
+# SPEC - Migração para MySQL (Native Driver) com Factory Pattern
 
-## 1. Overview
-Currently, `src/index.ts` handles all dependencies, route definitions, and domain logic. This project aims to decouple these responsibilities by delegating route definitions to their respective domain-specific infrastructure layers. This is highly viable and aligns with the Clean Architecture/DDD principles already present in the codebase.
+Este documento especifica a refatoração da infraestrutura de dados para suportar múltiplos bancos de dados (SQLite e MySQL), utilizando o padrão **Factory** para isolar a lógica de persistência.
 
-## 2. Technical Viability and Potential Issues
-- **Viability:** High. Each domain is already separated into `application`, `infrastructure`, and `model`. Adding a `routes` layer in `infrastructure` is a natural extension.
-- **Potential Problems:**
-    - **Bun `serve` Structure:** Bun's router expects a flat `routes` object. We must ensure no route collisions between modules (e.g., `/api/projects` vs `/api/projects/:id`).
-    - **Dependency Injection:** Repositories and Use Cases must be instantiated in `index.ts` (or a separate DI container) and passed down to the route factories.
-    - **Unified Error Handling:** We need a consistent way to handle errors and status codes across all modular routes.
-    - **Auth Middleware:** All modules depend on the same `authenticate` logic, which must be accessible globally.
+## 1. Nova Estrutura de Diretórios
 
-## 3. Shared Infrastructure
-- **`src/Shared/infrastructure/HttpHandlers.ts`**:
-    - `handleProtected`: Wrapper for authenticated requests.
-    - `handleResponse`: Unified success/error response formatter.
-    - `parseFormData`: Helper for multipart/form-data parsing.
+Para evitar poluição e manter o projeto organizado, os repositórios serão movidos para diretórios de persistência específicos:
 
-## 4. Modular Routes
-Each module will define a factory function that takes its dependencies and returns a subset of the Bun routes object.
+### 1.1 Módulo Project
+- `src/Project/infrastructure/persistence/SQLite/`: Implementações atuais renomeadas.
+- `src/Project/infrastructure/persistence/MySQL/`: Novas implementações utilizando `mysql2`.
+- `src/Project/infrastructure/ProjectRepositoryFactory.ts`: Centraliza a criação dos repositórios do módulo.
 
-### 4.1 Auth Routes (`src/Auth/infrastructure/AuthRoutes.ts`)
-**Dependencies:** `LoginUseCase`, `RegisterUseCase`, `LogoutUseCase`, `GetSessionUseCase`.
-**Routes:**
-- `POST /api/auth/login`
-- `POST /api/auth/register`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
+### 1.2 Módulo Payment
+- `src/Payment/infrastructure/persistence/SQLite/`
+- `src/Payment/infrastructure/persistence/MySQL/`
+- `src/Payment/infrastructure/PaymentRepositoryFactory.ts`
 
-### 4.2 Project Routes (`src/Project/infrastructure/ProjectRoutes.ts`)
-**Dependencies:** All Project-related Use Cases and Repositories.
-**Routes:**
-- `GET /api/projects`, `POST /api/projects`
-- `GET /api/projects/:id`, `PATCH /api/projects/:id`, `DELETE /api/projects/:id`
-- `GET /api/projects/:id/phases`, `POST /api/projects/:id/phases`
-- `GET /api/projects/:id/tasks`, `POST /api/projects/:id/tasks`
-- `GET /api/projects/:id/docs`, `POST /api/projects/:id/docs`
-- `GET /api/projects/:id/governance`
-- `POST /api/projects/:id/import-docs`
-- `POST /api/parse-document`
-- `POST /api/parse-doc-hierarchy`
-- `POST /api/import-project`
-- `PATCH /api/tasks/:id`, `DELETE /api/tasks/:id`
+## 2. Implementação da Factory
 
-### 4.3 Payment Routes (`src/Payment/infrastructure/PaymentRoutes.ts`)
-**Dependencies:** `ProcessPaymentUseCase`, `HandlePaymentWebhookUseCase`.
-**Routes:**
-- `POST /api/payments/checkout`
-- `POST /api/webhooks/stripe`
+A Factory decidirá qual implementação retornar com base na variável `DB_TYPE`.
 
-## 5. Implementation Strategy
-1.  **Extract Shared Logic:** Move `handleProtected` to `Shared`.
-2.  **Auth Module:** Implement `AuthRoutes.ts`. This will handle the cookie management logic (Set-Cookie).
-3.  **Project Module:** Implement `ProjectRoutes.ts`. Group all project, task, and document management routes.
-4.  **Payment Module:** Implement `PaymentRoutes.ts`. Include the Stripe webhook.
-5.  **Refactor `src/index.ts`:**
-    - Initialize all dependencies.
-    - Combine route objects: `routes: { ...authRoutes, ...projectRoutes, ...paymentRoutes }`.
-    - Serve static assets and SPA catch-all.
+```typescript
+// Exemplo: src/Project/infrastructure/ProjectRepositoryFactory.ts
+import { SQLiteProjectRepository } from "./persistence/SQLite/SQLiteProjectRepository";
+import { MySQLProjectRepository } from "./persistence/MySQL/MySQLProjectRepository";
+
+export class ProjectRepositoryFactory {
+  static createProjectRepository(): IProjectRepository {
+    const dbType = process.env.DB_TYPE || 'sqlite';
+    return dbType === 'mysql' 
+      ? new MySQLProjectRepository() 
+      : new SQLiteProjectRepository();
+  }
+  // Repetir para Task, Phase, Doc...
+}
+```
+
+## 3. Configuração do MySQL (Pool Nativo)
+
+Criar `src/Shared/infrastructure/persistence/MySQLConnection.ts` para centralizar o pool de conexões.
+
+```typescript
+import mysql from 'mysql2/promise';
+
+export const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 20,
+  enableKeepAlive: true
+});
+```
+
+## 4. Plano de Execução Detalhado
+
+1.  **Instalação**: `bun add mysql2`.
+2.  **Infraestrutura Compartilhada**: Criar `MySQLConnection.ts` em `Shared`.
+3.  **Migração SQLite**: 
+    - Criar diretórios `persistence/SQLite` em cada módulo.
+    - Mover e renomear arquivos (ex: `ProjectRepository.ts` -> `SQLiteProjectRepository.ts`).
+    - Ajustar os imports internos (apontando corretamente para `../../../../db`).
+4.  **Implementação MySQL**:
+    - Criar diretórios `persistence/MySQL`.
+    - Implementar repositórios traduzindo queries SQLite para MySQL (Prepared Statements).
+5.  **Criação das Factories**: Implementar as classes Factory em cada módulo.
+6.  **Refatoração do `src/index.ts`**: Substituir a instanciação direta `new Repository()` pelas chamadas à Factory.
+7.  **Schema SQL**: Criar `documentation/mysql-schema.sql` com todos os DDLs necessários.
+
+## 5. Considerações Técnicas (Diferenças SQL)
+
+- **Booleans**: No MySQL, usar `TINYINT(1)`.
+- **IDs**: `AUTO_INCREMENT` vs `AUTOINCREMENT`.
+- **JSON**: O campo `checklists` da tabela `tasks` deve ser do tipo `JSON` no MySQL para melhor performance de consulta, enquanto no SQLite é `TEXT`.
+- **Dates**: Garantir compatibilidade com `ISOStrings` ou `DATETIME` nativo.

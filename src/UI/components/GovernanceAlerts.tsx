@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
+import { GovernanceApiService } from '../infrastructure/GovernanceApiService';
 
 interface GovernanceData {
   nextStep?: { 
@@ -21,8 +22,7 @@ const GovernanceAlerts: React.FC = () => {
   const fetchGovernance = async () => {
     if (!selectedProject || !user) return;
     try {
-      const response = await fetch(`/api/projects/${selectedProject.id}/governance`);
-      const data = await response.json();
+      const data = await GovernanceApiService.getReport(selectedProject.id);
       setGovData(data);
     } catch (error) {
       console.error("Error fetching governance:", error);

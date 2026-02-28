@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { AppUser } from "../../Auth/domain/interfaces/AppUser";
-import { FetchAuthRepository } from "../../Auth/infrastructure/FetchAuthRepository";
-import type { IAuthRepository } from "../../Auth/application/interfaces/IAuthRepository";
+import { AuthApiService } from "../infrastructure/AuthApiService";
 
 interface AuthContextType {
   user: AppUser | null;
@@ -13,9 +12,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// No frontend, sempre usamos o FetchAuthRepository para interagir com nossa API
-const authRepository: IAuthRepository = new FetchAuthRepository();
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Tenta recuperar a sessão atual ao carregar
     const checkSession = async () => {
       try {
-        const currentUser = await authRepository.verifyToken(""); // Chamada para /api/auth/me
+        const currentUser = await AuthApiService.verifyToken();
         setUser(currentUser);
       } catch (error) {
         console.error("Failed to restore session:", error);
@@ -37,17 +33,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const loggedUser = await authRepository.signIn(email, password);
+    const loggedUser = await AuthApiService.signIn(email, password);
     setUser(loggedUser);
   };
 
   const signUp = async (email: string, password: string) => {
-    const registeredUser = await authRepository.signUp(email, password);
+    const registeredUser = await AuthApiService.signUp(email, password);
     setUser(registeredUser);
   };
 
   const signOut = async () => {
-    await authRepository.signOut();
+    await AuthApiService.signOut();
     setUser(null);
   };
 
